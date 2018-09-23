@@ -12,7 +12,7 @@
     "@babel/runtime": "^7.0.0",
     "rxjs": "^6.3.2",
     "rxjs-broker": "^3.0.27",
-    "rxjs-connector": "^1.0.0",
+    "rxjs-connector": "^1.0.1",
     "timing-object": "^1.0.20",
     "tslib": "^1.9.3"
   },
