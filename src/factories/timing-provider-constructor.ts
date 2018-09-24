@@ -2,7 +2,7 @@ import { ConnectableObservable, Observable, Subject, Subscription, merge } from 
 import { IDataChannel, IMaskableSubject, TStringifyableJsonValue, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
-import { ITimingProvider, ITimingStateVector, ITimingStateVectorUpdate, TConnectionState } from 'timing-object';
+import { ITimingProvider, ITimingStateVector, TConnectionState, TTimingStateVectorUpdate } from 'timing-object';
 import { EventTarget } from '../event-target';
 import { ITimingProviderConstructor } from '../interfaces';
 
@@ -37,7 +37,7 @@ export const createTimingProviderConstructor = (
 
         private _startPosition: number;
 
-        private _updateRequests: Subject<ITimingStateVectorUpdate>;
+        private _updateRequests: Subject<TTimingStateVectorUpdate>;
 
         private _vector: ITimingStateVector;
 
@@ -107,7 +107,7 @@ export const createTimingProviderConstructor = (
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
 
-        public update (newVector: ITimingStateVectorUpdate) {
+        public update (newVector: TTimingStateVectorUpdate) {
             if (this._remoteUpdatesSubscription === null) {
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
