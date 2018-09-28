@@ -59,12 +59,18 @@
     "webpack": "^4.20.2"
   },
   "files": [
-    "build/es5/",
     "build/es2015/",
+    "build/es5/",
     "build/esm/",
     "src/"
   ],
   "homepage": "https://github.com/chrisguttandin/timing-provider",
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint --edit --extends @commitlint/config-angular",
+      "pre-commit": "grunt lint"
+    }
+  },
   "keywords": [
     "Timing Object",
     "Timing Provider",
@@ -82,8 +88,6 @@
     "url": "https://github.com/chrisguttandin/timing-provider.git"
   },
   "scripts": {
-    "commitmsg": "commitlint --edit --extends @commitlint/config-angular",
-    "precommit": "grunt lint",
     "prepublishOnly": "grunt build",
     "test": "grunt lint && grunt test"
   },
