@@ -1,11 +1,19 @@
+import { createEventTargetConstructor } from './factories/event-target-constructor';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
 import { estimatedOffset } from './helpers/estimated-offset';
-import { ITimingProviderConstructor } from './interfaces';
+import { IEventTargetConstructor, ITimingProviderConstructor } from './interfaces';
 
 export * from './interfaces';
+export * from './types';
+
+const eventTargetConstructor: IEventTargetConstructor = createEventTargetConstructor(document);
 
 const timingProviderConstructor: ITimingProviderConstructor = createTimingProviderConstructor(
-    estimatedOffset, fetch, performance, setTimeout
+    estimatedOffset,
+    eventTargetConstructor,
+    fetch,
+    performance,
+    setTimeout
 );
 
 export { timingProviderConstructor as TimingProvider };

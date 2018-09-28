@@ -1,21 +1,22 @@
-import { ConnectableObservable, Observable, Subject, Subscription, merge } from 'rxjs';
-import { IDataChannel, IMaskableSubject, TStringifyableJsonValue, wrap } from 'rxjs-broker';
+import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
+import { IDataChannel, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
 import { ITimingProvider, ITimingStateVector, TConnectionState, TTimingStateVectorUpdate } from 'timing-object';
-import { EventTarget } from '../event-target';
 import { ITimingProviderConstructor } from '../interfaces';
+import { TTimingProviderConstructorFactory } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
 
-export const createTimingProviderConstructor = (
-    estimatedOffset: (openedDataChannelSubjects: Observable<IMaskableSubject<TStringifyableJsonValue>>) => Observable<number>,
-    fetch: Window['fetch'],
-    performance: Window['performance'],
-    setTimeout: Window['setTimeout']
+export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
+    estimatedOffset,
+    eventTargetConstructor,
+    fetch,
+    performance,
+    setTimeout
 ): ITimingProviderConstructor => {
 
-    return class TimingProvider extends EventTarget implements ITimingProvider {
+    return class TimingProvider extends eventTargetConstructor implements ITimingProvider {
 
         private _endPosition: number;
 
