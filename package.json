@@ -9,7 +9,7 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.1.2",
+    "@babel/runtime": "^7.1.5",
     "rxjs": "^6.3.3",
     "rxjs-broker": "^4.0.6",
     "rxjs-connector": "^2.0.6",
