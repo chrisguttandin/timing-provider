@@ -60,43 +60,43 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._createClient();
         }
 
-        get endPosition () {
+        get endPosition (): number {
             return this._endPosition;
         }
 
-        get error () {
+        get error (): null | Error {
             return this._error;
         }
 
-        get onadjust () {
+        get onadjust (): null | EventListener {
             return this._onadjust;
         }
 
-        get onchange () {
+        get onchange (): null | EventListener {
             return this._onchange;
         }
 
-        get onreadystatechange () {
+        get onreadystatechange (): null | EventListener {
             return this._onreadystatechange;
         }
 
-        get readyState () {
+        get readyState (): TConnectionState {
             return this._readyState;
         }
 
-        get skew () {
+        get skew (): number {
             return this._skew;
         }
 
-        get startPosition () {
+        get startPosition (): number {
             return this._startPosition;
         }
 
-        get vector () {
+        get vector (): ITimingStateVector {
             return this._vector;
         }
 
-        public destroy () {
+        public destroy (): void {
             if (this._remoteUpdatesSubscription === null) {
                 throw new Error('The timingProvider is already destroyed.');
             }
@@ -108,7 +108,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
 
-        public update (newVector: TTimingStateVectorUpdate) {
+        public update (newVector: TTimingStateVectorUpdate): Promise<void> {
             if (this._remoteUpdatesSubscription === null) {
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
@@ -118,7 +118,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return Promise.resolve();
         }
 
-        private async _createClient () {
+        private async _createClient (): Promise<void> {
             const response = await fetch(`${ SUENC_URL }providers/${ this._providerId }/clients`, { method: 'POST' });
             // @todo Use the clientId to delete the client again upon completion.
             const { /* id: clientId, */ socket: { url: clientSocketUrl } } = await response.json();
