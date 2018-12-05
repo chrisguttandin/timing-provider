@@ -7,7 +7,7 @@
 [![version](https://img.shields.io/npm/v/timing-provider.svg?style=flat-square)](https://www.npmjs.com/package/timing-provider)
 
 This is an implementation of a TimingProvider as it is defined by the
-[Timing Object specification](http://webtiming.github.io/timingobject/). It uses
+[Timing Object specification](https://webtiming.github.io/timingobject/). It uses
 WebRTC to communicate between the connected clients.
 
 ## Installation
