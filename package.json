@@ -13,7 +13,7 @@
     "rxjs": "^6.3.3",
     "rxjs-broker": "^4.0.12",
     "rxjs-connector": "^2.0.13",
-    "timing-object": "^2.0.4",
+    "timing-object": "^2.0.5",
     "tslib": "^1.9.3"
   },
   "description": "An implementation of the timing provider specification.",
