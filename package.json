@@ -11,7 +11,7 @@
   "dependencies": {
     "@babel/runtime": "^7.2.0",
     "rxjs": "^6.3.3",
-    "rxjs-broker": "^4.0.13",
+    "rxjs-broker": "^4.0.14",
     "rxjs-connector": "^2.0.14",
     "timing-object": "^2.0.5",
     "tslib": "^1.9.3"
