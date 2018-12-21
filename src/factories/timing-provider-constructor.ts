@@ -3,8 +3,7 @@ import { IDataChannel, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
 import { ITimingProvider, ITimingStateVector, TConnectionState, TTimingStateVectorUpdate } from 'timing-object';
-import { ITimingProviderConstructor } from '../interfaces';
-import { TTimingProviderConstructorFactory } from '../types';
+import { TTimingProviderConstructor, TTimingProviderConstructorFactory } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
 
@@ -14,7 +13,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
     fetch,
     performance,
     setTimeout
-): ITimingProviderConstructor => {
+): TTimingProviderConstructor => {
 
     return class TimingProvider extends eventTargetConstructor implements ITimingProvider {
 
