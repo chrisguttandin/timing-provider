@@ -37,7 +37,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _startPosition: number;
 
-        private _updateRequests: Subject<TTimingStateVectorUpdate>;
+        private _updateRequestsSubject: Subject<TTimingStateVectorUpdate>;
 
         private _vector: ITimingStateVector;
 
@@ -54,7 +54,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._remoteUpdatesSubscription = null;
             this._skew = 0;
             this._startPosition = Number.NEGATIVE_INFINITY;
-            this._updateRequests = new Subject();
+            this._updateRequestsSubject = new Subject();
             this._vector = { acceleration: 0, position: 0, timestamp: 0, velocity: 0 };
             this._createClient();
         }
@@ -102,7 +102,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             this._readyState = 'closed';
             this._remoteUpdatesSubscription.unsubscribe();
-            this._updateRequests.complete();
+            this._updateRequestsSubject.complete();
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
@@ -112,7 +112,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
 
-            this._updateRequests.next(newVector);
+            this._updateRequestsSubject.next(newVector);
 
             return Promise.resolve();
         }
@@ -127,7 +127,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
 
-            const closedDataChannels = new Subject<IDataChannel>();
+            const closedDataChannelsSubject = new Subject<IDataChannel>();
             const openedDataChannels = <ConnectableObservable<IDataChannel>> accept(clientSocketUrl)
                 .pipe(
                     publish<IDataChannel>()
@@ -139,14 +139,14 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                         const emitClosedDataChannel = () => {
                             dataChannel.removeEventListener('close', emitClosedDataChannel);
-                            closedDataChannels.next(dataChannel);
+                            closedDataChannelsSubject.next(dataChannel);
                         };
 
                         dataChannel.addEventListener('close', emitClosedDataChannel);
                     }),
                     map((dataChannel) => wrap(dataChannel))
                 );
-            const currentlyOpenDataChannels = merge(closedDataChannels, openedDataChannels)
+            const currentlyOpenDataChannels = merge(closedDataChannelsSubject, openedDataChannels)
                 .pipe(
                     scan<IDataChannel>((dataChannels, dataChannel) => {
                         const { readyState } = dataChannel;
@@ -181,7 +181,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }, [ ])
                 );
 
-            this._updateRequests
+            this._updateRequestsSubject
                 .pipe(
                     withLatestFrom(currentlyOpenDataChannels)
                 )
