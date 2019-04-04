@@ -36,7 +36,8 @@ export const estimatedOffset = (openedDataChannelSubjects: Observable<IMaskableS
                             // @todo Do fire an update event whenever the offset changes.
                         }),
                         scan<number, number[]>((latestValues, newValue) => [ ...latestValues.slice(-4), newValue ], [ ]),
-                        map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length)
+                        map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length),
+                        startWith(0)
                     );
             })
         );
