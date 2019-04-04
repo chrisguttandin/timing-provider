@@ -1,8 +1,14 @@
 import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
 import { IDataChannel, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
-import { ITimingProvider, ITimingStateVector, TConnectionState, TTimingStateVectorUpdate } from 'timing-object';
+import { filter, map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
+import {
+    ITimingProvider,
+    ITimingStateVector,
+    TConnectionState,
+    TTimingStateVectorUpdate,
+    filterTimingStateVectorUpdate
+} from 'timing-object';
 import { TTimingProviderConstructor, TTimingProviderConstructorFactory } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
@@ -183,16 +189,30 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             this._updateRequestsSubject
                 .pipe(
+                    map((vector) => filterTimingStateVectorUpdate(vector)),
+                    filter((vector) => {
+                        for (const [ property, value ] of Object.entries(vector)) {
+                            if (value !== this._vector[<'acceleration' | 'position' | 'velocity'> property]) {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    }),
+                    map((vector) => {
+                        const { acceleration, position, velocity } = this._vector;
+
+                        return { acceleration, position, timestamp: performance.now(), velocity, ...vector };
+                    }),
                     withLatestFrom(currentlyOpenDataChannels)
                 )
                 .subscribe(([ vector, dataChannels ]) => {
-                    const timestamp = performance.now();
-
                     dataChannels.forEach((dataChannel) => {
-                        dataChannel.send(JSON.stringify({ type: 'update', message: { timestamp, vector } }));
+                        dataChannel.send(JSON.stringify({ type: 'update', message: vector }));
                     });
 
-                    this._vector = <ITimingStateVector> (<any> vector);
+                    this._vector = vector;
+
                     this.dispatchEvent(new CustomEvent('update', { detail: vector }));
                 });
 
@@ -200,17 +220,17 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(
-                    mergeMap((dataChannelSubject) => dataChannelSubject.mask({ type: 'update' })),
+                    mergeMap((dataChannelSubject) => {
+                        return dataChannelSubject.mask<{ acceleration: number; position: number; timestamp: number; velocity: number }>(
+                            { type: 'update' }
+                        );
+                    }),
                     withLatestFrom(offset$)
                 )
-                // @todo Replace any with the actual type.
-                .subscribe(([ { timestamp: remoteTimestamp, vector: { acceleration, position, velocity } }, offset ]: [ any, number ]) => {
-                    // @todo Consider the acceleration as well.
-                    const now = performance.now();
-                    const desiredTimestamp = remoteTimestamp - offset;
-                    // @todo Remove the type casting.
-                    const normalizedPosition = position + (((now - desiredTimestamp) * velocity) / 1000);
-                    const vector = <ITimingStateVector> { acceleration, position: normalizedPosition, velocity };
+                .subscribe(([ { acceleration, position, timestamp: remoteTimestamp, velocity }, offset ]) => {
+                    const timestamp = remoteTimestamp - offset;
+                    const vector = { acceleration, position, timestamp, velocity };
+
                     this._vector = vector;
 
                     this.dispatchEvent(new CustomEvent('update', { detail: vector }));
