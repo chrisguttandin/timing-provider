@@ -186,10 +186,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     withLatestFrom(currentlyOpenDataChannels)
                 )
                 .subscribe(([ vector, dataChannels ]) => {
-                    const timeStamp = performance.now();
+                    const timestamp = performance.now();
 
                     dataChannels.forEach((dataChannel) => {
-                        dataChannel.send(JSON.stringify({ type: 'update', message: { timeStamp, vector } }));
+                        dataChannel.send(JSON.stringify({ type: 'update', message: { timestamp, vector } }));
                     });
 
                     this._vector = <ITimingStateVector> (<any> vector);
@@ -204,13 +204,12 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     withLatestFrom(offsets)
                 )
                 // @todo Replace any with the actual type.
-                .subscribe(([ { timeStamp: remoteTimeStamp, vector: { acceleration, position, velocity } }, offset ]: [ any, number ]) => {
+                .subscribe(([ { timestamp: remoteTimestamp, vector: { acceleration, position, velocity } }, offset ]: [ any, number ]) => {
                     // @todo Consider the acceleration as well.
                     const now = performance.now();
-                    const desiredTimeStamp = remoteTimeStamp - offset;
-
-                    const normalizedPosition = position + (((now - desiredTimeStamp) * velocity) / 1000);
+                    const desiredTimestamp = remoteTimestamp - offset;
                     // @todo Remove the type casting.
+                    const normalizedPosition = position + (((now - desiredTimestamp) * velocity) / 1000);
                     const vector = <ITimingStateVector> { acceleration, position: normalizedPosition, velocity };
                     this._vector = vector;
 
