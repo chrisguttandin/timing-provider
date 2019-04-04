@@ -1,6 +1,6 @@
 import { Observable, interval, zip } from 'rxjs';
 import { IMaskableSubject, TStringifyableJsonValue } from 'rxjs-broker';
-import { finalize, map, mergeMap, scan } from 'rxjs/operators';
+import { finalize, map, mergeMap, scan, startWith } from 'rxjs/operators';
 
 export const estimatedOffset = (openedDataChannelSubjects: Observable<IMaskableSubject<TStringifyableJsonValue>>): Observable<number> => {
     return openedDataChannelSubjects
@@ -16,6 +16,7 @@ export const estimatedOffset = (openedDataChannelSubjects: Observable<IMaskableS
                 return zip(
                     interval(1000)
                         .pipe(
+                            startWith(),
                             map(() => {
                                 // @todo It should be okay to send an empty message.
                                 pingSubject.send(undefined);
