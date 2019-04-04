@@ -196,12 +196,12 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     this.dispatchEvent(new CustomEvent('update', { detail: vector }));
                 });
 
-            const offsets = estimatedOffset(openedDataChannelSubjects);
+            const offset$ = estimatedOffset(openedDataChannelSubjects);
 
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(
                     mergeMap((dataChannelSubject) => dataChannelSubject.mask({ type: 'update' })),
-                    withLatestFrom(offsets)
+                    withLatestFrom(offset$)
                 )
                 // @todo Replace any with the actual type.
                 .subscribe(([ { timestamp: remoteTimestamp, vector: { acceleration, position, velocity } }, offset ]: [ any, number ]) => {
