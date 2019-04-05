@@ -237,7 +237,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
         private _setInternalVector (vector: ITimingStateVector): void {
             this._vector = vector;
 
-            this.dispatchEvent(new CustomEvent('update', { detail: vector }));
+            this.dispatchEvent(new CustomEvent('change', { detail: vector }));
         }
 
     };
