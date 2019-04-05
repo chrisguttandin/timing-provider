@@ -207,9 +207,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     withLatestFrom(currentlyOpenDataChannels)
                 )
                 .subscribe(([ vector, dataChannels ]) => {
-                    dataChannels.forEach((dataChannel) => {
-                        dataChannel.send(JSON.stringify({ type: 'update', message: vector }));
-                    });
+                    dataChannels
+                        /*
+                         * Before firing the close event a DataChannel transitions to the 'closing' state. When that happens calling send()
+                         * is not possible anymore and throws an error.
+                         */
+                        .filter(({ readyState }) => (readyState !== 'closing'))
+                        .forEach((dataChannel) => {
+                            dataChannel.send(JSON.stringify({ type: 'update', message: vector }));
+                        });
 
                     this._setInternalVector(vector);
                 });
