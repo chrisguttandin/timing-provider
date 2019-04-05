@@ -211,9 +211,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         dataChannel.send(JSON.stringify({ type: 'update', message: vector }));
                     });
 
-                    this._vector = vector;
-
-                    this.dispatchEvent(new CustomEvent('update', { detail: vector }));
+                    this._setInternalVector(vector);
                 });
 
             const offset$ = estimatedOffset(openedDataChannelSubjects);
@@ -229,14 +227,17 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 )
                 .subscribe(([ { acceleration, position, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
-                    const vector = { acceleration, position, timestamp, velocity };
 
-                    this._vector = vector;
-
-                    this.dispatchEvent(new CustomEvent('update', { detail: vector }));
+                    this._setInternalVector({ acceleration, position, timestamp, velocity });
                 });
 
             openedDataChannels.connect();
+        }
+
+        private _setInternalVector (vector: ITimingStateVector): void {
+            this._vector = vector;
+
+            this.dispatchEvent(new CustomEvent('update', { detail: vector }));
         }
 
     };
