@@ -14,7 +14,7 @@ import { TTimingProviderConstructor, TTimingProviderConstructorFactory } from '.
 const SUENC_URL = 'https://suenc.io/';
 
 export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
-    estimatedOffset,
+    estimateOffset,
     eventTargetConstructor,
     fetch,
     performance,
@@ -220,7 +220,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     this._setInternalVector(vector);
                 });
 
-            const offset$ = estimatedOffset(openedDataChannelSubjects);
+            const offset$ = estimateOffset(openedDataChannelSubjects);
 
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(

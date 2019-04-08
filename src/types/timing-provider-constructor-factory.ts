@@ -1,9 +1,9 @@
-import { Observable } from 'rxjs';
-import { IMaskableSubject, TStringifyableJsonValue } from 'rxjs-broker';
-import { TEventTargetConstructor, TTimingProviderConstructor } from '../types';
+import { TEstimateOffsetFunction } from './estimate-offset-function';
+import { TEventTargetConstructor } from './event-target-constructor';
+import { TTimingProviderConstructor } from './timing-provider-constructor';
 
 export type TTimingProviderConstructorFactory = (
-    estimatedOffset: (openedDataChannelSubjects: Observable<IMaskableSubject<TStringifyableJsonValue>>) => Observable<number>,
+    estimateOffset: TEstimateOffsetFunction,
     eventTargetConstructor: TEventTargetConstructor,
     fetch: Window['fetch'],
     performance: Window['performance'],
