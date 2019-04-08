@@ -202,7 +202,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     map((vector) => {
                         const { acceleration, position, velocity } = this._vector;
 
-                        return { acceleration, position, timestamp: performance.now(), velocity, ...vector };
+                        return { acceleration, position, timestamp: performance.now() / 1000, velocity, ...vector };
                     }),
                     withLatestFrom(currentlyOpenDataChannels)
                 )

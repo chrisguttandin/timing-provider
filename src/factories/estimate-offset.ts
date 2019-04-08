@@ -40,7 +40,8 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
                             map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length),
                             startWith(0)
                         );
-                })
+                }),
+                map((offset) => offset / 1000)
             );
     };
 };
