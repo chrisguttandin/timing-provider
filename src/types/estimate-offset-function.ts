@@ -1,6 +1,5 @@
 import { Observable } from 'rxjs';
-import { IMaskableSubject, TStringifyableJsonValue } from 'rxjs-broker';
+import { IRemoteSubject } from 'rxjs-broker';
+import { TDataChannelEvent } from './data-channel-event';
 
-export type TEstimateOffsetFunction = (
-    openedDataChannelSubjects: Observable<IMaskableSubject<TStringifyableJsonValue>>
-) => Observable<number>;
+export type TEstimateOffsetFunction = (openedDataChannelSubjects: Observable<IRemoteSubject<TDataChannelEvent>>) => Observable<number>;

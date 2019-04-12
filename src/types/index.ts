@@ -1,3 +1,4 @@
+export * from './data-channel-event';
 export * from './estimate-offset-factory';
 export * from './estimate-offset-function';
 export * from './event-target-constructor';

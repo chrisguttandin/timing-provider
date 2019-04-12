@@ -1,5 +1,5 @@
 import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
-import { IDataChannel, wrap } from 'rxjs-broker';
+import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { filter, map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
 import {
@@ -9,7 +9,8 @@ import {
     TTimingStateVectorUpdate,
     filterTimingStateVectorUpdate
 } from 'timing-object';
-import { TTimingProviderConstructor, TTimingProviderConstructorFactory } from '../types';
+import { IUpdateEvent } from '../interfaces';
+import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
 
@@ -133,10 +134,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
 
-            const closedDataChannelsSubject = new Subject<IDataChannel>();
-            const openedDataChannels = <ConnectableObservable<IDataChannel>> accept(clientSocketUrl)
+            const closedDataChannelsSubject = new Subject<RTCDataChannel>();
+            const openedDataChannels = <ConnectableObservable<RTCDataChannel>> accept(clientSocketUrl)
                 .pipe(
-                    publish<IDataChannel>()
+                    publish<RTCDataChannel>()
                 );
             const openedDataChannelSubjects = openedDataChannels
                 .pipe(
@@ -150,11 +151,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                         dataChannel.addEventListener('close', emitClosedDataChannel);
                     }),
-                    map((dataChannel) => wrap(dataChannel))
+                    map((dataChannel) => wrap<TDataChannelEvent>(dataChannel))
                 );
             const currentlyOpenDataChannels = merge(closedDataChannelsSubject, openedDataChannels)
                 .pipe(
-                    scan<IDataChannel>((dataChannels, dataChannel) => {
+                    scan<RTCDataChannel>((dataChannels, dataChannel) => {
                         const { readyState } = dataChannel;
 
                         // DataChannels with a readyState of 'open' get appended to the array of DataChannels.
@@ -225,9 +226,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(
                     mergeMap((dataChannelSubject) => {
-                        return dataChannelSubject.mask<{ acceleration: number; position: number; timestamp: number; velocity: number }>(
-                            { type: 'update' }
-                        );
+                        return mask<IUpdateEvent['message'], IUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
                     }),
                     withLatestFrom(offset$)
                 )

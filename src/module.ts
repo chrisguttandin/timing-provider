@@ -3,6 +3,7 @@ import { createEventTargetConstructor } from './factories/event-target-construct
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
 import { TEventTargetConstructor, TTimingProviderConstructor } from './types';
 
+export * from './interfaces';
 export * from './types';
 
 const eventTargetConstructor: TEventTargetConstructor = createEventTargetConstructor(document);
