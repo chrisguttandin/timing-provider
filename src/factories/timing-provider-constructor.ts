@@ -155,7 +155,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 );
             const currentlyOpenDataChannels = merge(closedDataChannelsSubject, openedDataChannels)
                 .pipe(
-                    scan<RTCDataChannel>((dataChannels, dataChannel) => {
+                    scan<RTCDataChannel, RTCDataChannel[]>((dataChannels, dataChannel) => {
                         const { readyState } = dataChannel;
 
                         // DataChannels with a readyState of 'open' get appended to the array of DataChannels.
