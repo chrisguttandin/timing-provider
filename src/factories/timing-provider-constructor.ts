@@ -114,7 +114,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
 
-        public update (newVector: TTimingStateVectorUpdate): Promise<void> {
+        public update (newVector: TTimingStateVectorUpdate): Promise<void> { // tslint:disable-line:invalid-void
             if (this._remoteUpdatesSubscription === null) {
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
@@ -124,7 +124,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return Promise.resolve();
         }
 
-        private async _createClient (): Promise<void> {
+        private async _createClient (): Promise<void> { // tslint:disable-line:invalid-void
             const response = await fetch(`${ SUENC_URL }providers/${ this._providerId }/clients`, { method: 'POST' });
             // @todo Use the clientId to delete the client again upon completion.
             const { /* id: clientId, */ socket: { url: clientSocketUrl } } = await response.json();
