@@ -9,8 +9,7 @@ import {
     TTimingStateVectorUpdate,
     filterTimingStateVectorUpdate
 } from 'timing-object';
-import { IUpdateEvent } from '../interfaces';
-import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory } from '../types';
+import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
 
@@ -226,7 +225,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(
                     mergeMap((dataChannelSubject) => {
-                        return mask<IUpdateEvent['message'], IUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
+                        return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
                     }),
                     withLatestFrom(offset$)
                 )

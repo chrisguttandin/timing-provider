@@ -1,16 +1,15 @@
 import { interval, zip } from 'rxjs';
 import { mask } from 'rxjs-broker';
 import { finalize, map, mergeMap, scan, startWith } from 'rxjs/operators';
-import { IPingEvent, IPongEvent } from '../interfaces';
-import { TDataChannelEvent, TEstimateOffsetFactory } from '../types';
+import { TDataChannelEvent, TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
     return (openedDataChannelSubjects) => {
         return openedDataChannelSubjects
             .pipe(
                 mergeMap((dataChannelSubject) => {
-                    const pingSubject = mask<undefined, IPingEvent, TDataChannelEvent>({ action: 'ping' }, dataChannelSubject);
-                    const pongSubject = mask<number, IPongEvent, TDataChannelEvent>({ action: 'pong' }, dataChannelSubject);
+                    const pingSubject = mask<undefined, TPingEvent, TDataChannelEvent>({ action: 'ping' }, dataChannelSubject);
+                    const pongSubject = mask<number, TPongEvent, TDataChannelEvent>({ action: 'pong' }, dataChannelSubject);
 
                     // Respond to every ping event with the current value returned by performance.now().
                     const pingSubjectSubscription = pingSubject

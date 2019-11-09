@@ -1,3 +1,5 @@
-import { IPingEvent, IPongEvent, IUpdateEvent } from '../interfaces';
+import { TPingEvent } from './ping-event';
+import { TPongEvent } from './pong-event';
+import { TUpdateEvent } from './update-event';
 
-export type TDataChannelEvent = IPingEvent | IPongEvent | IUpdateEvent;
+export type TDataChannelEvent = TPingEvent | TPongEvent | TUpdateEvent;
