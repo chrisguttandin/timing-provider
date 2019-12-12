@@ -108,6 +108,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             this._readyState = 'closed';
             this._remoteUpdatesSubscription.unsubscribe();
+            this._remoteUpdatesSubscription = null;
             this._updateRequestsSubject.complete();
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
