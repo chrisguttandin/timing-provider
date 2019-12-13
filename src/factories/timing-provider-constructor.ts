@@ -1,7 +1,7 @@
 import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { filter, map, mergeMap, publish, scan, tap, withLatestFrom } from 'rxjs/operators';
+import { filter, map, mergeMap, publish, scan, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -185,7 +185,8 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         }
 
                         throw new Error(`The DataChannel has an unexpected readyState "${ readyState }".`);
-                    }, [ ])
+                    }, [ ]),
+                    startWith([ ])
                 );
 
             this._updateRequestsSubject
