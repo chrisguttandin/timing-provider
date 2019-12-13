@@ -194,7 +194,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     map((vector) => filterTimingStateVectorUpdate(vector)),
                     filter((vector) => {
                         for (const [ property, value ] of Object.entries(vector)) {
-                            if (value !== this._vector[<'acceleration' | 'position' | 'velocity'> property]) {
+                            if (value !== this._vector[<keyof typeof vector> property]) {
                                 return true;
                             }
                         }
