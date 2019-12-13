@@ -1,6 +1,6 @@
 import { interval, zip } from 'rxjs';
 import { mask } from 'rxjs-broker';
-import { finalize, map, mergeMap, scan, startWith } from 'rxjs/operators';
+import { finalize, map, mergeMap, scan, startWith, tap } from 'rxjs/operators';
 import { TDataChannelEvent, TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
@@ -19,25 +19,18 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
                         interval(1000)
                             .pipe(
                                 startWith(),
-                                map(() => {
-                                    // @todo It should be okay to send an empty message.
-                                    pingSubject.send(undefined);
-
-                                    return performance.now();
-                                })
+                                // @todo It should be okay to send an empty message.
+                                tap(() => pingSubject.send(undefined)),
+                                map(() => performance.now())
                             ),
                         pongSubject
                     )
                         .pipe(
                             finalize(() => pingSubjectSubscription.unsubscribe()),
-                            map(([ pingTime, pongTime ]) => {
-                                const now = performance.now();
-
-                                // This will compute the offset with the formula "remoteTime - localTime".
-                                return ((pongTime * 2) - pingTime - now) / 2;
-                                // @todo Do fire an update event whenever the offset changes.
-                            }),
+                            // This will compute the offset with the formula "remoteTime - localTime".
+                            map(([ pingTime, pongTime ]) => pongTime - ((pingTime + performance.now()) / 2)),
                             scan<number, number[]>((latestValues, newValue) => [ ...latestValues.slice(-4), newValue ], [ ]),
+                            // @todo Do fire an update event whenever the offset changes.
                             map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length),
                             startWith(0)
                         );
