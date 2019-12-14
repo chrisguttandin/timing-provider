@@ -8,3 +8,4 @@ export * from './pong-event';
 export * from './timing-provider-constructor';
 export * from './timing-provider-constructor-factory';
 export * from './update-event';
+export * from './wait-for-event-function';

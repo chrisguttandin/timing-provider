@@ -1,6 +1,7 @@
 import { createEstimateOffset } from './factories/estimate-offset';
 import { createEventTargetConstructor } from './factories/event-target-constructor';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
+import { waitForEvent } from './functions/wait-for-event';
 import { TEventTargetConstructor, TTimingProviderConstructor } from './types';
 
 export * from './types';
@@ -12,7 +13,8 @@ const timingProviderConstructor: TTimingProviderConstructor = createTimingProvid
     eventTargetConstructor,
     fetch,
     performance,
-    setTimeout
+    setTimeout,
+    waitForEvent
 );
 
 export { timingProviderConstructor as TimingProvider };

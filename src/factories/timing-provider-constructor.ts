@@ -1,7 +1,7 @@
 import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { filter, map, mergeMap, publish, scan, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { filter, map, mergeMap, publish, scan, startWith, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -18,7 +18,8 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
     eventTargetConstructor,
     fetch,
     performance,
-    setTimeout
+    setTimeout,
+    waitForEvent
 ): TTimingProviderConstructor => {
 
     return class TimingProvider extends eventTargetConstructor implements ITimingProvider {
@@ -134,26 +135,19 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
 
-            const closedDataChannelsSubject = new Subject<RTCDataChannel>();
             const openedDataChannels = <ConnectableObservable<RTCDataChannel>> accept(clientSocketUrl)
                 .pipe(
                     publish<RTCDataChannel>()
                 );
+            const closedDataChannels = openedDataChannels
+                .pipe(
+                    mergeMap((dataChannel) => waitForEvent(dataChannel, 'close'))
+                );
             const openedDataChannelSubjects = openedDataChannels
                 .pipe(
-                    tap((dataChannel) => {
-                        // @todo Ideally use something like the finally operator.
-
-                        const emitClosedDataChannel = () => {
-                            dataChannel.removeEventListener('close', emitClosedDataChannel);
-                            closedDataChannelsSubject.next(dataChannel);
-                        };
-
-                        dataChannel.addEventListener('close', emitClosedDataChannel);
-                    }),
                     map((dataChannel) => wrap<TDataChannelEvent>(dataChannel))
                 );
-            const currentlyOpenDataChannels = merge(closedDataChannelsSubject, openedDataChannels)
+            const currentlyOpenDataChannels = merge(closedDataChannels, openedDataChannels)
                 .pipe(
                     scan<RTCDataChannel, RTCDataChannel[]>((dataChannels, dataChannel) => {
                         const { readyState } = dataChannel;
