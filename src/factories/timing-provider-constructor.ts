@@ -1,7 +1,7 @@
-import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
+import { ConnectableObservable, Subject, Subscription } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { filter, map, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
+import { expand, filter, map, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -139,12 +139,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 .pipe(
                     publish<RTCDataChannel>()
                 );
-            const closedDataChannels = openedDataChannels
+            const currentlyOpenDataChannels = openedDataChannels
                 .pipe(
-                    mergeMap((dataChannel) => waitForEvent(dataChannel, 'close'))
-                );
-            const currentlyOpenDataChannels = merge(closedDataChannels, openedDataChannels)
-                .pipe(
+                    expand((dataChannel) => waitForEvent(dataChannel, 'close')),
                     scan<RTCDataChannel, RTCDataChannel[]>((dataChannels, dataChannel) => {
                         const { readyState } = dataChannel;
 
