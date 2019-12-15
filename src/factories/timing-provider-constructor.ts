@@ -216,14 +216,14 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     this._setInternalVector(vector);
                 });
 
-            const offset$ = estimateOffset(openedDataChannelSubjects);
-
             this._remoteUpdatesSubscription = openedDataChannelSubjects
                 .pipe(
                     mergeMap((dataChannelSubject) => {
-                        return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
-                    }),
-                    withLatestFrom(offset$)
+                        return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject)
+                            .pipe(
+                                withLatestFrom(estimateOffset(dataChannelSubject))
+                            );
+                    })
                 )
                 .subscribe(([ { acceleration, position, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
