@@ -4,7 +4,11 @@ import { createTimingProviderConstructor } from './factories/timing-provider-con
 import { waitForEvent } from './functions/wait-for-event';
 import { TEventTargetConstructor, TTimingProviderConstructor } from './types';
 
-export * from './types';
+/*
+ * @todo Explicitly referencing the barrel file seems to be necessary when enabling the
+ * isolatedModules compiler option.
+ */
+export * from './types/index';
 
 const eventTargetConstructor: TEventTargetConstructor = createEventTargetConstructor(document);
 
