@@ -1,7 +1,7 @@
 import { ConnectableObservable, Subject, Subscription, merge } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { filter, map, mergeMap, publish, scan, startWith, withLatestFrom } from 'rxjs/operators';
+import { filter, map, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -143,10 +143,6 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 .pipe(
                     mergeMap((dataChannel) => waitForEvent(dataChannel, 'close'))
                 );
-            const openedDataChannelSubjects = openedDataChannels
-                .pipe(
-                    map((dataChannel) => wrap<TDataChannelEvent>(dataChannel))
-                );
             const currentlyOpenDataChannels = merge(closedDataChannels, openedDataChannels)
                 .pipe(
                     scan<RTCDataChannel, RTCDataChannel[]>((dataChannels, dataChannel) => {
@@ -216,12 +212,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     this._setInternalVector(vector);
                 });
 
-            this._remoteUpdatesSubscription = openedDataChannelSubjects
+            this._remoteUpdatesSubscription = openedDataChannels
                 .pipe(
-                    mergeMap((dataChannelSubject) => {
+                    mergeMap((dataChannel) => {
+                        const dataChannelSubject = wrap<TDataChannelEvent>(dataChannel);
+
                         return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject)
                             .pipe(
-                                withLatestFrom(estimateOffset(dataChannelSubject))
+                                withLatestFrom(estimateOffset(dataChannelSubject)),
+                                takeUntil(waitForEvent(dataChannel, 'close'))
                             );
                     })
                 )
