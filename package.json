@@ -47,7 +47,7 @@
     "mocha": "^6.2.2",
     "rollup": "^1.27.13",
     "rollup-plugin-babel": "^4.3.3",
-    "rxjs-marbles": "^5.0.3",
+    "rxjs-marbles": "^5.0.4",
     "sinon": "^7.5.0",
     "sinon-chai": "^3.3.0",
     "ts-loader": "^6.2.1",
