@@ -5,6 +5,7 @@ export * from './event-target-constructor';
 export * from './event-target-constructor-factory';
 export * from './ping-event';
 export * from './pong-event';
+export * from './request-event';
 export * from './timing-provider-constructor';
 export * from './timing-provider-constructor-factory';
 export * from './update-event';

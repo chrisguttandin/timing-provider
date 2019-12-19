@@ -1,7 +1,7 @@
 import { ConnectableObservable, Subject, Subscription } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { expand, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
+import { expand, mapTo, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -10,7 +10,7 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
-import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
+import { TDataChannelEvent, TRequestEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'https://suenc.io/';
 
@@ -39,6 +39,8 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _readyState: TConnectionState;
 
+        private _remoteRequestsSubscription: null | Subscription;
+
         private _remoteUpdatesSubscription: null | Subscription;
 
         private _skew: number;
@@ -63,6 +65,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._onreadystatechange = null;
             this._providerId = providerId;
             this._readyState = 'connecting';
+            this._remoteRequestsSubscription = null;
             this._remoteUpdatesSubscription = null;
             this._skew = 0;
             this._startPosition = Number.NEGATIVE_INFINITY;
@@ -109,11 +112,13 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
         }
 
         public destroy (): void {
-            if (this._remoteUpdatesSubscription === null) {
+            if (this._remoteRequestsSubscription === null || this._remoteUpdatesSubscription === null) {
                 throw new Error('The timingProvider is already destroyed.');
             }
 
             this._readyState = 'closed';
+            this._remoteRequestsSubscription.unsubscribe();
+            this._remoteRequestsSubscription = null;
             this._remoteUpdatesSubscription.unsubscribe();
             this._remoteUpdatesSubscription = null;
             this._updateRequestsSubject.complete();
@@ -201,6 +206,30 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         });
 
                     this._setInternalVector(vector);
+                });
+
+            this._remoteRequestsSubscription = openedDataChannels
+                .pipe(
+                    mergeMap((dataChannel, index) => {
+                        const dataChannelSubject = wrap<TDataChannelEvent>(dataChannel);
+                        const requestSubject = mask<TRequestEvent['message'], TRequestEvent, TDataChannelEvent>(
+                            { type: 'request' },
+                            dataChannelSubject
+                        );
+
+                        if (index === 0) {
+                            requestSubject.send(undefined);
+                        }
+
+                        return requestSubject
+                            .pipe(
+                                mapTo(dataChannel),
+                                takeUntil(waitForEvent(dataChannel, 'close'))
+                            );
+                    })
+                )
+                .subscribe((dataChannel) => {
+                    dataChannel.send(JSON.stringify({ type: 'update', message: { ...this._vector, timeOrigin: this._timeOrigin } }));
                 });
 
             this._remoteUpdatesSubscription = openedDataChannels
