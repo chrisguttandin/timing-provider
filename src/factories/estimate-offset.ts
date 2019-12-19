@@ -20,7 +20,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
                     tap(() => pingSubject.send(undefined)),
                     map(() => performance.now())
                 ),
-                pongSubject
+            pongSubject
         )
             .pipe(
                 finalize(() => pingSubjectSubscription.unsubscribe()),
