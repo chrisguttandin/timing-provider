@@ -1,7 +1,7 @@
-import { ConnectableObservable, Subject, Subscription } from 'rxjs';
+import { ConnectableObservable, Subject, Subscription, combineLatest } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { expand, last, map, mapTo, mergeMap, publish, scan, startWith, withLatestFrom } from 'rxjs/operators';
+import { distinctUntilChanged, expand, last, map, mapTo, mergeMap, publish, scan, startWith, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -219,11 +219,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._remoteUpdatesSubscription = updateSubjects
                 .pipe(
                     withLatestFrom(dataChannelSubjects),
-                    mergeMap(([ updateSubject, dataChannelSubject ]) => updateSubject
+                    mergeMap(([ updateSubject, dataChannelSubject ]) => combineLatest([ updateSubject, estimateOffset(dataChannelSubject) ])
                         .pipe(
-                            withLatestFrom(estimateOffset(dataChannelSubject))
-                        ))
-                )
+                            distinctUntilChanged(([ vectorA ], [ vectorB ]) => (vectorA === vectorB))
+                        )))
                 .subscribe(([ { acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
 
