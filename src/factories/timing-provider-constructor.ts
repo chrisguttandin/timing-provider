@@ -163,7 +163,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 .pipe(
                     expand((updateSubject) => updateSubject
                         .pipe(
-                            last(),
+                            last(null),
                             mapTo(updateSubject)
                         )
                     ),
