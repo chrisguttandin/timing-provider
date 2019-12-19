@@ -218,12 +218,12 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 .subscribe(([ { acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
 
-                    if (this._timeOrigin > timeOrigin || (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)) {
+                    if (this._timeOrigin < timeOrigin || (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)) {
                         const vector = translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp);
 
                         this._updateRequestsSubject.next(vector);
                     } else {
-                        if (this._timeOrigin < timeOrigin) {
+                        if (this._timeOrigin > timeOrigin) {
                             this._timeOrigin = timeOrigin;
                         }
 
