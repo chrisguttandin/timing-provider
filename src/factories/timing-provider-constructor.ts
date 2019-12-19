@@ -1,7 +1,7 @@
 import { ConnectableObservable, Subject, Subscription } from 'rxjs';
-import { mask, wrap } from 'rxjs-broker';
+import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { expand, mapTo, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
+import { expand, last, map, mapTo, mergeMap, publish, scan, startWith, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -19,8 +19,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
     eventTargetConstructor,
     fetch,
     performance,
-    setTimeout,
-    waitForEvent
+    setTimeout
 ): TTimingProviderConstructor => {
 
     return class TimingProvider extends eventTargetConstructor implements ITimingProvider {
@@ -149,69 +148,55 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
 
-            const openedDataChannels = <ConnectableObservable<RTCDataChannel>> accept(clientSocketUrl)
+            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(clientSocketUrl)
                 .pipe(
-                    publish<RTCDataChannel>()
+                    map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
+                    publish()
                 );
-            const currentlyOpenDataChannels = openedDataChannels
+            const updateSubjects = dataChannelSubjects
                 .pipe(
-                    expand((dataChannel) => waitForEvent(dataChannel, 'close')),
-                    scan<RTCDataChannel, RTCDataChannel[]>((dataChannels, dataChannel) => {
-                        const { readyState } = dataChannel;
+                    map((dataChannelSubject) => {
+                        return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
+                    })
+                );
+            const currentlyActiveUpdateSubjects = <ConnectableObservable<IRemoteSubject<TUpdateEvent['message']>[]>> updateSubjects
+                .pipe(
+                    expand((updateSubject) => updateSubject
+                        .pipe(
+                            last(),
+                            mapTo(updateSubject)
+                        )
+                    ),
+                    scan<IRemoteSubject<TUpdateEvent['message']>, IRemoteSubject<TUpdateEvent['message']>[]>((
+                        activeUpdateSubjects,
+                        activeUpdateSubject
+                    ) => {
+                        const index = activeUpdateSubjects.indexOf(activeUpdateSubject);
 
-                        // DataChannels with a readyState of 'open' get appended to the array of DataChannels.
-                        if (readyState === 'open') {
-                            const index = dataChannels.findIndex(({ label }) => label === dataChannel.label);
-
-                            // In case there was already another channel with the same label, close it and replace it with the new one.
-                            if (index > -1) {
-                                dataChannels[index].close();
-
-                                return [ ...dataChannels.slice(0, index), ...dataChannels.slice(index + 1), dataChannel ];
-                            }
-
-                            return [ ...dataChannels, dataChannel ];
+                        if (index > -1) {
+                            return [ ...activeUpdateSubjects.slice(0, index), ...activeUpdateSubjects.slice(index + 1) ];
                         }
 
-                        // DataChannels with a readyState of 'closed' get removed from the array of DataChannels.
-                        if (readyState === 'closed') {
-                            const index = dataChannels.indexOf(dataChannel);
-
-                            // In case the channel was replaced before it can't be detected by it's object identity anymore.
-                            if (index === -1) {
-                                return dataChannels;
-                            }
-
-                            return [ ...dataChannels.slice(0, index), ...dataChannels.slice(index + 1) ];
-                        }
-
-                        throw new Error(`The DataChannel has an unexpected readyState "${ readyState }".`);
+                        return [ ...activeUpdateSubjects, activeUpdateSubject ];
                     }, [ ]),
                     startWith([ ])
                 );
 
             this._updateRequestsSubject
                 .pipe(
-                    withLatestFrom(currentlyOpenDataChannels)
+                    withLatestFrom(currentlyActiveUpdateSubjects)
                 )
-                .subscribe(([ vector, dataChannels ]) => {
-                    dataChannels
-                        /*
-                         * Before firing the close event a DataChannel transitions to the 'closing' state. When that happens calling send()
-                         * is not possible anymore and throws an error.
-                         */
-                        .filter(({ readyState }) => (readyState !== 'closing'))
-                        .forEach((dataChannel) => {
-                            dataChannel.send(JSON.stringify({ type: 'update', message: { ...vector, timeOrigin: this._timeOrigin } }));
-                        });
+                .subscribe(([ vector, activeUpdateSubjects ]) => {
+                    activeUpdateSubjects
+                        .forEach((activeUpdateSubject) => activeUpdateSubject.send({ ...vector, timeOrigin: this._timeOrigin }));
 
                     this._setInternalVector(vector);
                 });
 
-            this._remoteRequestsSubscription = openedDataChannels
+            this._remoteRequestsSubscription = updateSubjects
                 .pipe(
-                    mergeMap((dataChannel, index) => {
-                        const dataChannelSubject = wrap<TDataChannelEvent>(dataChannel);
+                    withLatestFrom(dataChannelSubjects),
+                    mergeMap(([ updateSubject, dataChannelSubject ], index) => {
                         const requestSubject = mask<TRequestEvent['message'], TRequestEvent, TDataChannelEvent>(
                             { type: 'request' },
                             dataChannelSubject
@@ -223,26 +208,21 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                         return requestSubject
                             .pipe(
-                                mapTo(dataChannel),
-                                takeUntil(waitForEvent(dataChannel, 'close'))
+                                mapTo(updateSubject)
                             );
                     })
                 )
-                .subscribe((dataChannel) => {
-                    dataChannel.send(JSON.stringify({ type: 'update', message: { ...this._vector, timeOrigin: this._timeOrigin } }));
+                .subscribe((updatesSubject) => {
+                    updatesSubject.send({ ...this._vector, timeOrigin: this._timeOrigin });
                 });
 
-            this._remoteUpdatesSubscription = openedDataChannels
+            this._remoteUpdatesSubscription = updateSubjects
                 .pipe(
-                    mergeMap((dataChannel) => {
-                        const dataChannelSubject = wrap<TDataChannelEvent>(dataChannel);
-
-                        return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject)
-                            .pipe(
-                                withLatestFrom(estimateOffset(dataChannelSubject)),
-                                takeUntil(waitForEvent(dataChannel, 'close'))
-                            );
-                    })
+                    withLatestFrom(dataChannelSubjects),
+                    mergeMap(([ updateSubject, dataChannelSubject ]) => updateSubject
+                        .pipe(
+                            withLatestFrom(estimateOffset(dataChannelSubject))
+                        ))
                 )
                 .subscribe(([ { acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
@@ -260,7 +240,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }
                 });
 
-            openedDataChannels.connect();
+            dataChannelSubjects.connect();
         }
 
         private _setInternalVector (vector: ITimingStateVector): void {
