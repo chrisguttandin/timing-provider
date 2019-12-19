@@ -1,13 +1,14 @@
 import { ConnectableObservable, Subject, Subscription } from 'rxjs';
 import { mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
-import { expand, filter, map, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
+import { expand, mergeMap, publish, scan, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
 import {
     ITimingProvider,
     ITimingStateVector,
     TConnectionState,
     TTimingStateVectorUpdate,
-    filterTimingStateVectorUpdate
+    filterTimingStateVectorUpdate,
+    translateTimingStateVector
 } from 'timing-object';
 import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
@@ -44,12 +45,16 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _startPosition: number;
 
-        private _updateRequestsSubject: Subject<TTimingStateVectorUpdate>;
+        private _timeOrigin: number;
+
+        private _updateRequestsSubject: Subject<ITimingStateVector>;
 
         private _vector: ITimingStateVector;
 
         constructor (providerId: string) {
             super();
+
+            const timestamp = performance.now() / 1000;
 
             this._endPosition = Number.POSITIVE_INFINITY;
             this._error = null;
@@ -61,8 +66,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._remoteUpdatesSubscription = null;
             this._skew = 0;
             this._startPosition = Number.NEGATIVE_INFINITY;
+            this._timeOrigin = (performance.timeOrigin / 1000) + timestamp;
             this._updateRequestsSubject = new Subject();
-            this._vector = { acceleration: 0, position: 0, timestamp: 0, velocity: 0 };
+            this._vector = { acceleration: 0, position: 0, timestamp, velocity: 0 };
             this._createClient();
         }
 
@@ -120,7 +126,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
 
-            this._updateRequestsSubject.next(newVector);
+            this._updateRequestsSubject.next({
+                ...translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp),
+                ...filterTimingStateVectorUpdate(newVector)
+            });
 
             return Promise.resolve();
         }
@@ -178,21 +187,6 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
             this._updateRequestsSubject
                 .pipe(
-                    map((vector) => filterTimingStateVectorUpdate(vector)),
-                    filter((vector) => {
-                        for (const [ property, value ] of Object.entries(vector)) {
-                            if (value !== this._vector[<keyof typeof vector> property]) {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }),
-                    map((vector) => {
-                        const { acceleration, position, velocity } = this._vector;
-
-                        return { acceleration, position, timestamp: performance.now() / 1000, velocity, ...vector };
-                    }),
                     withLatestFrom(currentlyOpenDataChannels)
                 )
                 .subscribe(([ vector, dataChannels ]) => {
@@ -203,7 +197,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                          */
                         .filter(({ readyState }) => (readyState !== 'closing'))
                         .forEach((dataChannel) => {
-                            dataChannel.send(JSON.stringify({ type: 'update', message: vector }));
+                            dataChannel.send(JSON.stringify({ type: 'update', message: { ...vector, timeOrigin: this._timeOrigin } }));
                         });
 
                     this._setInternalVector(vector);
@@ -221,10 +215,20 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                             );
                     })
                 )
-                .subscribe(([ { acceleration, position, timestamp: remoteTimestamp, velocity }, offset ]) => {
+                .subscribe(([ { acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset ]) => {
                     const timestamp = remoteTimestamp - offset;
 
-                    this._setInternalVector({ acceleration, position, timestamp, velocity });
+                    if (this._timeOrigin > timeOrigin || (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)) {
+                        const vector = translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp);
+
+                        this._updateRequestsSubject.next(vector);
+                    } else {
+                        if (this._timeOrigin < timeOrigin) {
+                            this._timeOrigin = timeOrigin;
+                        }
+
+                        this._setInternalVector({ acceleration, position, timestamp, velocity });
+                    }
                 });
 
             openedDataChannels.connect();
