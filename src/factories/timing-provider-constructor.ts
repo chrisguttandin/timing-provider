@@ -132,7 +132,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             }
 
             this._updateRequestsSubject.next({
-                ...translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp),
+                ...translateTimingStateVector(this._vector, (performance.now() / 1000) - this._vector.timestamp),
                 ...filterTimingStateVectorUpdate(newVector)
             });
 
@@ -228,7 +228,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     const timestamp = remoteTimestamp - offset;
 
                     if (this._timeOrigin < timeOrigin || (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)) {
-                        const vector = translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp);
+                        const vector = translateTimingStateVector(this._vector, (performance.now() / 1000) - this._vector.timestamp);
 
                         this._updateRequestsSubject.next(vector);
                     } else {
