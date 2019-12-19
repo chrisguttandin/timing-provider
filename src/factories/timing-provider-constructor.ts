@@ -71,6 +71,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._timeOrigin = (performance.timeOrigin / 1000) + timestamp;
             this._updateRequestsSubject = new Subject();
             this._vector = { acceleration: 0, position: 0, timestamp, velocity: 0 };
+
             this._createClient();
         }
 
