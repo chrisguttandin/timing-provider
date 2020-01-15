@@ -142,9 +142,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             const url = `${ SUENC_URL }?providerId=${ this._providerId }`;
 
             // @todo Only set the the readyState to 'open' when there is no other client.
-            this._readyState = 'open';
+            setTimeout(() => {
+                this._readyState = 'open';
 
-            setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
+                this.dispatchEvent(new Event('readystatechange'));
+            });
 
             const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(url)
                 .pipe(
