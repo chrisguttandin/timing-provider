@@ -12,12 +12,11 @@ import {
 } from 'timing-object';
 import { TDataChannelEvent, TRequestEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
-const SUENC_URL = 'https://suenc.io/';
+const SUENC_URL = 'wss://matchmaker.suenc.io';
 
 export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
     estimateOffset,
     eventTargetConstructor,
-    fetch,
     performance,
     setTimeout
 ): TTimingProviderConstructor => {
@@ -139,17 +138,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return Promise.resolve();
         }
 
-        private async _createClient (): Promise<void> { // tslint:disable-line:invalid-void
-            const response = await fetch(`${ SUENC_URL }providers/${ this._providerId }/clients`, { method: 'POST' });
-            // @todo Use the clientId to delete the client again upon completion.
-            const { /* id: clientId, */ socket: { url: clientSocketUrl } } = await response.json();
+        private _createClient (): void { // tslint:disable-line:invalid-void
+            const url = `${ SUENC_URL }?providerId=${ this._providerId }`;
 
             // @todo Only set the the readyState to 'open' when there is no other client.
             this._readyState = 'open';
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
 
-            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(clientSocketUrl)
+            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(url)
                 .pipe(
                     map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
                     publish()

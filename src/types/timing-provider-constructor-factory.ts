@@ -6,7 +6,6 @@ import { TWaitForEventFunction } from './wait-for-event-function';
 export type TTimingProviderConstructorFactory = (
     estimateOffset: TEstimateOffsetFunction,
     eventTargetConstructor: TEventTargetConstructor,
-    fetch: Window['fetch'],
     performance: Window['performance'],
     setTimeout: Window['setTimeout'],
     waitForEvent: TWaitForEventFunction

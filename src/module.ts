@@ -15,7 +15,6 @@ const eventTargetConstructor: TEventTargetConstructor = createEventTargetConstru
 const timingProviderConstructor: TTimingProviderConstructor = createTimingProviderConstructor(
     createEstimateOffset(performance),
     eventTargetConstructor,
-    fetch,
     performance,
     setTimeout,
     waitForEvent
