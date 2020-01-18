@@ -140,15 +140,8 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _createClient (): void { // tslint:disable-line:invalid-void
             const url = `${ SUENC_URL }?providerId=${ this._providerId }`;
-
-            // @todo Only set the the readyState to 'open' when there is no other client.
-            setTimeout(() => {
-                this._readyState = 'open';
-
-                this.dispatchEvent(new Event('readystatechange'));
-            });
-
-            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(url)
+            const subjectConfig = { openObserver: { next: () => this.dispatchEvent(new Event('readystatechange')) } };
+            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(url, subjectConfig)
                 .pipe(
                     map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
                     publish()
