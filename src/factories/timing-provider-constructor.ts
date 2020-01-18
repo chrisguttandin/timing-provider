@@ -140,7 +140,14 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _createClient (): void { // tslint:disable-line:invalid-void
             const url = `${ SUENC_URL }?providerId=${ this._providerId }`;
-            const subjectConfig = { openObserver: { next: () => this.dispatchEvent(new Event('readystatechange')) } };
+            const subjectConfig = {
+                openObserver: {
+                    next: () => {
+                        this._readyState = 'open';
+                        this.dispatchEvent(new Event('readystatechange'));
+                    }
+                }
+            };
             const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>> accept(url, subjectConfig)
                 .pipe(
                     map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
