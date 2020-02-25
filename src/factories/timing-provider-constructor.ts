@@ -125,7 +125,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
 
-        public update (newVector: TTimingStateVectorUpdate): Promise<void> { // tslint:disable-line:invalid-void
+        public update (newVector: TTimingStateVectorUpdate): Promise<void> {
             if (this._remoteUpdatesSubscription === null) {
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
@@ -138,7 +138,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return Promise.resolve();
         }
 
-        private _createClient (): void { // tslint:disable-line:invalid-void
+        private _createClient (): void {
             const url = `${ SUENC_URL }?providerId=${ this._providerId }`;
             const subjectConfig = {
                 openObserver: {
