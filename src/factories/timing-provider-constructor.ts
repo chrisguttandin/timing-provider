@@ -6,6 +6,7 @@ import {
     ITimingProvider,
     ITimingStateVector,
     TConnectionState,
+    TEventHandler,
     TTimingStateVectorUpdate,
     filterTimingStateVectorUpdate,
     translateTimingStateVector
@@ -27,11 +28,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _error: null | Error;
 
-        private _onadjust: null | EventListener;
+        private _onadjust: null | [ TEventHandler<this>, TEventHandler<this> ];
 
-        private _onchange: null | EventListener;
+        private _onchange: null | [ TEventHandler<this>, TEventHandler<this> ];
 
-        private _onreadystatechange: null | EventListener;
+        private _onreadystatechange: null | [ TEventHandler<this>, TEventHandler<this> ];
 
         private _providerId: string;
 
@@ -82,16 +83,64 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return this._error;
         }
 
-        get onadjust (): null | EventListener {
-            return this._onadjust;
+        get onadjust (): null | TEventHandler<this> {
+            return this._onadjust === null ? this._onadjust : this._onadjust[0];
         }
 
-        get onchange (): null | EventListener {
-            return this._onchange;
+        set onadjust (value) {
+            if (this._onadjust !== null) {
+                this.removeEventListener('adjust', this._onadjust[1]);
+            }
+
+            if (typeof value === 'function') {
+                const boundListener = value.bind(this);
+
+                this.addEventListener('adjust', boundListener);
+
+                this._onadjust = [ value, boundListener ];
+            } else {
+                this._onadjust = null;
+            }
         }
 
-        get onreadystatechange (): null | EventListener {
-            return this._onreadystatechange;
+        get onchange (): null | TEventHandler<this> {
+            return this._onchange === null ? this._onchange : this._onchange[0];
+        }
+
+        set onchange (value) {
+            if (this._onchange !== null) {
+                this.removeEventListener('change', this._onchange[1]);
+            }
+
+            if (typeof value === 'function') {
+                const boundListener = value.bind(this);
+
+                this.addEventListener('change', boundListener);
+
+                this._onchange = [ value, boundListener ];
+            } else {
+                this._onchange = null;
+            }
+        }
+
+        get onreadystatechange (): null | TEventHandler<this> {
+            return this._onreadystatechange === null ? this._onreadystatechange : this._onreadystatechange[0];
+        }
+
+        set onreadystatechange (value) {
+            if (this._onreadystatechange !== null) {
+                this.removeEventListener('readystatechange', this._onreadystatechange[1]);
+            }
+
+            if (typeof value === 'function') {
+                const boundListener = value.bind(this);
+
+                this.addEventListener('readystatechange', boundListener);
+
+                this._onreadystatechange = [ value, boundListener ];
+            } else {
+                this._onreadystatechange = null;
+            }
         }
 
         get readyState (): TConnectionState {

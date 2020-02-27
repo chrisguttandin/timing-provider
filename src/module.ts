@@ -1,8 +1,10 @@
 import { createEstimateOffset } from './factories/estimate-offset';
 import { createEventTargetConstructor } from './factories/event-target-constructor';
+import { createEventTargetFactory } from './factories/event-target-factory';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
 import { waitForEvent } from './functions/wait-for-event';
-import { TEventTargetConstructor, TTimingProviderConstructor } from './types';
+import { wrapEventListener } from './functions/wrap-event-listener';
+import { TTimingProviderConstructor } from './types';
 
 /*
  * @todo Explicitly referencing the barrel file seems to be necessary when enabling the
@@ -10,11 +12,9 @@ import { TEventTargetConstructor, TTimingProviderConstructor } from './types';
  */
 export * from './types/index';
 
-const eventTargetConstructor: TEventTargetConstructor = createEventTargetConstructor(document);
-
 const timingProviderConstructor: TTimingProviderConstructor = createTimingProviderConstructor(
     createEstimateOffset(performance),
-    eventTargetConstructor,
+    createEventTargetConstructor(createEventTargetFactory(window), wrapEventListener),
     performance,
     setTimeout,
     waitForEvent
