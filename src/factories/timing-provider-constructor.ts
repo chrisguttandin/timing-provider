@@ -14,6 +14,7 @@ import {
 import { TDataChannelEvent, TRequestEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
+const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
 
 export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
     estimateOffset,
@@ -32,7 +33,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _onreadystatechange: null | [TEventHandler<this>, TEventHandler<this>];
 
-        private _providerId: string;
+        private _providerIdOrUrl: string;
 
         private _readyState: TConnectionState;
 
@@ -50,7 +51,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _vector: ITimingStateVector;
 
-        constructor(providerId: string) {
+        constructor(providerIdOrUrl: string) {
             super();
 
             const timestamp = performance.now() / 1000;
@@ -60,7 +61,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._onadjust = null;
             this._onchange = null;
             this._onreadystatechange = null;
-            this._providerId = providerId;
+            this._providerIdOrUrl = providerIdOrUrl;
             this._readyState = 'connecting';
             this._remoteRequestsSubscription = null;
             this._remoteUpdatesSubscription = null;
@@ -186,7 +187,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
         }
 
         private _createClient(): void {
-            const url = `${SUENC_URL}?providerId=${this._providerId}`;
+            const url = PROVIDER_ID_REGEX.test(this._providerIdOrUrl)
+                ? `${SUENC_URL}?providerId=${this._providerIdOrUrl}`
+                : this._providerIdOrUrl;
             const subjectConfig = {
                 openObserver: {
                     next: () => {
