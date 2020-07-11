@@ -1,4 +1,4 @@
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, from, iif, throwError, timer, zip } from 'rxjs';
+import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, defer, from, iif, throwError, timer, zip } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import {
@@ -215,7 +215,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }
                 }
             };
-            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>accept(url, subjectConfig).pipe(
+            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>defer(() =>
+                accept(url, subjectConfig)
+            ).pipe(
                 retryWhen((errors) =>
                     errors.pipe(
                         concatMap((err, index) =>
