@@ -1,19 +1,24 @@
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest } from 'rxjs';
+import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, from, iif, throwError, timer, zip } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import {
     catchError,
+    concatMap,
     distinctUntilChanged,
     expand,
+    filter,
+    first,
     last,
     map,
     mapTo,
     mergeMap,
     publish,
+    retryWhen,
     scan,
     startWith,
     withLatestFrom
 } from 'rxjs/operators';
+import { online } from 'subscribable-things';
 import {
     ITimingProvider,
     ITimingStateVector,
@@ -211,6 +216,23 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 }
             };
             const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>accept(url, subjectConfig).pipe(
+                retryWhen((errors) =>
+                    errors.pipe(
+                        concatMap((err, index) =>
+                            iif(
+                                () => index < 4,
+                                zip(
+                                    timer((index + 1) ** 2 * 1000),
+                                    from(online()).pipe(
+                                        filter((isOnline) => isOnline),
+                                        first()
+                                    )
+                                ),
+                                throwError(err)
+                            )
+                        )
+                    )
+                ),
                 catchError((err) => {
                     this._error = err;
                     this._readyState = 'closed';
