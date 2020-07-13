@@ -1,19 +1,19 @@
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, defer, from, iif, throwError, timer, zip } from 'rxjs';
+import { retryBackoff } from 'backoff-rxjs';
+import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, from } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import {
     catchError,
-    concatMap,
     distinctUntilChanged,
     expand,
     filter,
     first,
+    ignoreElements,
     last,
     map,
     mapTo,
     mergeMap,
     publish,
-    retryWhen,
     scan,
     startWith,
     withLatestFrom
@@ -215,26 +215,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }
                 }
             };
-            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>defer(() =>
+            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>concat(
+                from(online()).pipe(
+                    filter((isOnline) => isOnline),
+                    first(),
+                    ignoreElements()
+                ),
                 accept(url, subjectConfig)
             ).pipe(
-                retryWhen((errors) =>
-                    errors.pipe(
-                        concatMap((err, index) =>
-                            iif(
-                                () => index < 4,
-                                zip(
-                                    timer((index + 1) ** 2 * 1000),
-                                    from(online()).pipe(
-                                        filter((isOnline) => isOnline),
-                                        first()
-                                    )
-                                ),
-                                throwError(err)
-                            )
-                        )
-                    )
-                ),
+                retryBackoff({ initialInterval: 1000, maxRetries: 5 }),
                 catchError((err) => {
                     this._error = err;
                     this._readyState = 'closed';
