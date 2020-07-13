@@ -219,7 +219,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => accept(url, subjectConfig))
             ).pipe(
-                retryBackoff({ initialInterval: 1000, maxRetries: 5 }),
+                retryBackoff({ initialInterval: 1000, maxRetries: 4 }),
                 catchError((err) => {
                     this._error = err;
                     this._readyState = 'closed';
