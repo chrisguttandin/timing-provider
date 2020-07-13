@@ -1,5 +1,5 @@
 import { retryBackoff } from 'backoff-rxjs';
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, from } from 'rxjs';
+import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, defer, from } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
@@ -217,7 +217,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             };
             const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
-                accept(url, subjectConfig)
+                defer(() => accept(url, subjectConfig))
             ).pipe(
                 retryBackoff({ initialInterval: 1000, maxRetries: 5 }),
                 catchError((err) => {
