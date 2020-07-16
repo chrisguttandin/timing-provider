@@ -16,7 +16,7 @@
         "rxjs-connector": "^4.0.13",
         "rxjs-etc": "^10.4.0",
         "subscribable-things": "^1.8.1",
-        "timing-object": "^3.1.10",
+        "timing-object": "^3.1.11",
         "tslib": "^2.0.0"
     },
     "description": "An implementation of the timing provider specification.",
