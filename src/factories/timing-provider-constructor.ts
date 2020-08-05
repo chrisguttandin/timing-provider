@@ -228,7 +228,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     return EMPTY;
                 }),
                 map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
-                publish()
+                publish() // tslint:disable-line:rxjs-no-connectable
             );
             const updateSubjects = dataChannelSubjects.pipe(
                 map((dataChannelSubject) => {
