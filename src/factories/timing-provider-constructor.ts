@@ -6,10 +6,10 @@ import { equals } from 'rxjs-etc/operators';
 import {
     catchError,
     distinctUntilChanged,
+    endWith,
     expand,
     first,
     ignoreElements,
-    last,
     map,
     mapTo,
     mergeMap,
@@ -236,7 +236,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 })
             );
             const currentlyActiveUpdateSubjects = <ConnectableObservable<IRemoteSubject<TUpdateEvent['message']>[]>>updateSubjects.pipe(
-                expand((updateSubject) => updateSubject.pipe(last(null), mapTo(updateSubject))),
+                expand((updateSubject) => updateSubject.pipe(ignoreElements(), endWith(updateSubject))),
                 scan<IRemoteSubject<TUpdateEvent['message']>, IRemoteSubject<TUpdateEvent['message']>[]>(
                     (activeUpdateSubjects, activeUpdateSubject) => {
                         const index = activeUpdateSubjects.indexOf(activeUpdateSubject);
