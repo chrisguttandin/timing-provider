@@ -236,7 +236,13 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 })
             );
             const currentlyActiveUpdateSubjects = <ConnectableObservable<IRemoteSubject<TUpdateEvent['message']>[]>>updateSubjects.pipe(
-                expand((updateSubject) => updateSubject.pipe(ignoreElements(), endWith(updateSubject))),
+                expand((updateSubject) =>
+                    updateSubject.pipe(
+                        catchError(() => EMPTY),
+                        ignoreElements(),
+                        endWith(updateSubject)
+                    )
+                ),
                 scan<IRemoteSubject<TUpdateEvent['message']>, IRemoteSubject<TUpdateEvent['message']>[]>(
                     (activeUpdateSubjects, activeUpdateSubject) => {
                         const index = activeUpdateSubjects.indexOf(activeUpdateSubject);
@@ -285,6 +291,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     withLatestFrom(dataChannelSubjects),
                     mergeMap(([updateSubject, dataChannelSubject]) =>
                         combineLatest([updateSubject, estimateOffset(dataChannelSubject)]).pipe(
+                            catchError(() => EMPTY),
                             distinctUntilChanged(([vectorA], [vectorB]) => vectorA === vectorB)
                         )
                     )
