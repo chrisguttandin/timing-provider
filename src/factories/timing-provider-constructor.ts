@@ -258,6 +258,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 startWith([])
             );
 
+            // tslint:disable-next-line:deprecation
             this._updateRequestsSubject.pipe(withLatestFrom(currentlyActiveUpdateSubjects)).subscribe(([vector, activeUpdateSubjects]) => {
                 activeUpdateSubjects.forEach((activeUpdateSubject) =>
                     activeUpdateSubject.send({ ...vector, timeOrigin: this._timeOrigin })
@@ -282,6 +283,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         return requestSubject.pipe(mapTo(updateSubject));
                     })
                 )
+                // tslint:disable-next-line:deprecation
                 .subscribe((updatesSubject) => {
                     updatesSubject.send({ ...this._vector, timeOrigin: this._timeOrigin });
                 });
@@ -296,6 +298,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         )
                     )
                 )
+                // tslint:disable-next-line:deprecation
                 .subscribe(([{ acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset]) => {
                     const timestamp = remoteTimestamp - offset;
 
