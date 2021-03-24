@@ -53,7 +53,7 @@
         "rollup": "^2.42.4",
         "rxjs-marbles": "^6.0.1",
         "sinon": "^10.0.0",
-        "sinon-chai": "^3.5.0",
+        "sinon-chai": "^3.6.0",
         "ts-loader": "^8.0.18",
         "tsconfig-holy-grail": "^11.0.48",
         "tslint": "^6.1.3",
