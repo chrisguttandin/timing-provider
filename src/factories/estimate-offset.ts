@@ -1,6 +1,6 @@
-import { interval, zip } from 'rxjs';
+import { EMPTY, interval, zip } from 'rxjs';
 import { mask } from 'rxjs-broker';
-import { finalize, map, scan, startWith, tap } from 'rxjs/operators';
+import { catchError, finalize, map, scan, startWith, tap } from 'rxjs/operators';
 import { TDataChannelEvent, TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
@@ -9,7 +9,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
         const pongSubject = mask<number, TPongEvent, TDataChannelEvent>({ action: 'pong' }, dataChannelSubject);
 
         // Respond to every ping event with the current value returned by performance.now().
-        const pingSubjectSubscription = pingSubject.subscribe(() => pongSubject.send(performance.now())); // tslint:disable-line:deprecation
+        const pingSubjectSubscription = pingSubject.pipe(catchError(() => EMPTY)).subscribe(() => pongSubject.send(performance.now())); // tslint:disable-line:deprecation
 
         return zip(
             interval(1000).pipe(

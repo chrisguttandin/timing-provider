@@ -1,5 +1,5 @@
 import { retryBackoff } from 'backoff-rxjs';
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, defer, from } from 'rxjs';
+import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif } from 'rxjs';
 import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
@@ -285,7 +285,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                             requestSubject.send(undefined);
                         }
 
-                        return requestSubject.pipe(mapTo(updateSubject));
+                        return requestSubject.pipe(
+                            mapTo(updateSubject),
+                            catchError(() => EMPTY)
+                        );
                     })
                 )
                 // tslint:disable-next-line:deprecation
