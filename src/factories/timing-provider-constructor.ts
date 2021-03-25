@@ -236,15 +236,20 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 })
             );
             const currentlyActiveUpdateSubjects = <ConnectableObservable<IRemoteSubject<TUpdateEvent['message']>[]>>updateSubjects.pipe(
-                expand((updateSubject) =>
-                    updateSubject.pipe(
-                        catchError(() => EMPTY),
-                        ignoreElements(),
-                        endWith(updateSubject)
+                map((updateSubject) => <[IRemoteSubject<TUpdateEvent['message']>, boolean]>[updateSubject, true]),
+                expand(([updateSubject, isExpandable]) =>
+                    iif(
+                        () => isExpandable,
+                        updateSubject.pipe(
+                            catchError(() => EMPTY),
+                            ignoreElements(),
+                            endWith<[IRemoteSubject<TUpdateEvent['message']>, boolean]>([updateSubject, false])
+                        ),
+                        EMPTY
                     )
                 ),
-                scan<IRemoteSubject<TUpdateEvent['message']>, IRemoteSubject<TUpdateEvent['message']>[]>(
-                    (activeUpdateSubjects, activeUpdateSubject) => {
+                scan<[IRemoteSubject<TUpdateEvent['message']>, boolean], IRemoteSubject<TUpdateEvent['message']>[]>(
+                    (activeUpdateSubjects, [activeUpdateSubject]) => {
                         const index = activeUpdateSubjects.indexOf(activeUpdateSubject);
 
                         if (index > -1) {
