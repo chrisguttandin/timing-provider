@@ -13,7 +13,7 @@
         "backoff-rxjs": "^6.5.7",
         "rxjs": "^6.6.7",
         "rxjs-broker": "^6.0.40",
-        "rxjs-connector": "^4.0.31",
+        "rxjs-connector": "^4.0.32",
         "rxjs-etc": "^10.6.0",
         "subscribable-things": "^1.11.15",
         "timing-object": "^3.1.26",
