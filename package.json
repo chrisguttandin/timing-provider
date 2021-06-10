@@ -12,7 +12,7 @@
         "@babel/runtime": "^7.14.5",
         "backoff-rxjs": "^6.5.7",
         "rxjs": "^6.6.7",
-        "rxjs-broker": "^6.0.40",
+        "rxjs-broker": "^6.0.41",
         "rxjs-connector": "^4.0.32",
         "rxjs-etc": "^10.6.1",
         "subscribable-things": "^1.11.18",
