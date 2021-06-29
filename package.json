@@ -67,12 +67,6 @@
         "src/"
     ],
     "homepage": "https://github.com/chrisguttandin/timing-provider",
-    "husky": {
-        "hooks": {
-            "commit-msg": "commitlint --edit --extends @commitlint/config-angular",
-            "pre-commit": "pretty-quick --config config/prettier/config.json --staged && grunt lint"
-        }
-    },
     "keywords": [
         "Timing Object",
         "Timing Provider",
@@ -90,6 +84,7 @@
         "url": "https://github.com/chrisguttandin/timing-provider.git"
     },
     "scripts": {
+        "prepare": "husky install",
         "prepublishOnly": "grunt build",
         "test": "grunt lint && grunt test"
     },
