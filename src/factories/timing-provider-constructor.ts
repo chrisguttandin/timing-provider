@@ -1,10 +1,11 @@
 import { retryBackoff } from 'backoff-rxjs';
-import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif } from 'rxjs';
+import { EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif, merge } from 'rxjs';
 import { IRemoteSubject, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
 import {
     catchError,
+    connect,
     distinctUntilChanged,
     endWith,
     expand,
@@ -14,9 +15,9 @@ import {
     map,
     mapTo,
     mergeMap,
-    publish,
     scan,
     startWith,
+    tap,
     withLatestFrom
 } from 'rxjs/operators';
 import { online } from 'subscribable-things';
@@ -56,13 +57,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _readyState: TConnectionState;
 
-        private _remoteRequestsSubscription: null | Subscription;
-
-        private _remoteUpdatesSubscription: null | Subscription;
-
         private _skew: number;
 
         private _startPosition: number;
+
+        private _subscription: null | Subscription;
 
         private _timeOrigin: number;
 
@@ -82,10 +81,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._onreadystatechange = null;
             this._providerIdOrUrl = providerIdOrUrl;
             this._readyState = 'connecting';
-            this._remoteRequestsSubscription = null;
-            this._remoteUpdatesSubscription = null;
             this._skew = 0;
             this._startPosition = Number.NEGATIVE_INFINITY;
+            this._subscription = null;
             this._timeOrigin = performance.timeOrigin / 1000 + timestamp;
             this._updateRequestsSubject = new Subject();
             this._vector = { acceleration: 0, position: 0, timestamp, velocity: 0 };
@@ -178,22 +176,20 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
         }
 
         public destroy(): void {
-            if (this._remoteRequestsSubscription === null || this._remoteUpdatesSubscription === null) {
+            if (this._subscription === null) {
                 throw new Error('The timingProvider is already destroyed.');
             }
 
             this._readyState = 'closed';
-            this._remoteRequestsSubscription.unsubscribe();
-            this._remoteRequestsSubscription = null;
-            this._remoteUpdatesSubscription.unsubscribe();
-            this._remoteUpdatesSubscription = null;
+            this._subscription.unsubscribe();
+            this._subscription = null;
             this._updateRequestsSubject.complete();
 
             setTimeout(() => this.dispatchEvent(new Event('readystatechange')));
         }
 
         public update(newVector: TTimingStateVectorUpdate): Promise<void> {
-            if (this._remoteUpdatesSubscription === null) {
+            if (this._subscription === null) {
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
 
@@ -217,112 +213,120 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }
                 }
             };
-            const dataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>>>concat(
+            this._subscription = concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => accept(url, subjectConfig))
-            ).pipe(
-                retryBackoff({ initialInterval: 1000, maxRetries: 4 }),
-                catchError((err) => {
-                    this._error = err;
-                    this._readyState = 'closed';
-                    this.dispatchEvent(new ErrorEvent('error', { error: err }));
-
-                    return EMPTY;
-                }),
-                map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
-                publish() // tslint:disable-line:rxjs-no-connectable
-            );
-            const currentlyActiveDataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>[]>>dataChannelSubjects.pipe(
-                map((dataChannelSubject) => <[IRemoteSubject<TDataChannelEvent>, boolean]>[dataChannelSubject, true]),
-                expand(([dataChannelSubject, isExpandable]) =>
-                    iif(
-                        () => isExpandable,
-                        dataChannelSubject.pipe(
-                            catchError(() => EMPTY),
-                            ignoreElements(),
-                            endWith<[IRemoteSubject<TDataChannelEvent>, boolean]>([dataChannelSubject, false])
-                        ),
-                        EMPTY
-                    )
-                ),
-                scan<[IRemoteSubject<TDataChannelEvent>, boolean], IRemoteSubject<TDataChannelEvent>[]>(
-                    (activeDataChannelSubjects, [activeDataChannelSubject]) => {
-                        const index = activeDataChannelSubjects.indexOf(activeDataChannelSubject);
-
-                        if (index > -1) {
-                            return [...activeDataChannelSubjects.slice(0, index), ...activeDataChannelSubjects.slice(index + 1)];
-                        }
-
-                        return [...activeDataChannelSubjects, activeDataChannelSubject];
-                    },
-                    []
-                ),
-                startWith([])
-            );
-
-            // tslint:disable-next-line:deprecation
-            this._updateRequestsSubject
-                .pipe(withLatestFrom(currentlyActiveDataChannelSubjects))
-                .subscribe(([vector, activeDataChannelSubjects]) => {
-                    activeDataChannelSubjects.forEach((activeUpdateSubject) =>
-                        activeUpdateSubject.send({ message: { ...vector, timeOrigin: this._timeOrigin }, type: 'update' })
-                    );
-
-                    this._setInternalVector(vector);
-                });
-
-            this._remoteRequestsSubscription = dataChannelSubjects
+            )
                 .pipe(
-                    mergeMap((dataChannelSubject, index) => {
-                        if (index === 0) {
-                            dataChannelSubject.send({ message: undefined, type: 'request' });
-                        }
+                    retryBackoff({ initialInterval: 1000, maxRetries: 4 }),
+                    catchError((err) => {
+                        this._error = err;
+                        this._readyState = 'closed';
+                        this.dispatchEvent(new ErrorEvent('error', { error: err }));
 
-                        return dataChannelSubject.pipe(
-                            filter(({ type }) => type === 'request'),
-                            mapTo(dataChannelSubject),
-                            catchError(() => EMPTY)
+                        return EMPTY;
+                    }),
+                    map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
+                    connect((dataChannelSubjects) => {
+                        const currentlyActiveDataChannelSubjects = dataChannelSubjects.pipe(
+                            map((dataChannelSubject) => <[IRemoteSubject<TDataChannelEvent>, boolean]>[dataChannelSubject, true]),
+                            expand(([dataChannelSubject, isExpandable]) =>
+                                iif(
+                                    () => isExpandable,
+                                    dataChannelSubject.pipe(
+                                        catchError(() => EMPTY),
+                                        ignoreElements(),
+                                        endWith<[IRemoteSubject<TDataChannelEvent>, boolean]>([dataChannelSubject, false])
+                                    ),
+                                    EMPTY
+                                )
+                            ),
+                            scan<[IRemoteSubject<TDataChannelEvent>, boolean], IRemoteSubject<TDataChannelEvent>[]>(
+                                (activeDataChannelSubjects, [activeDataChannelSubject]) => {
+                                    const index = activeDataChannelSubjects.indexOf(activeDataChannelSubject);
+
+                                    if (index > -1) {
+                                        return [
+                                            ...activeDataChannelSubjects.slice(0, index),
+                                            ...activeDataChannelSubjects.slice(index + 1)
+                                        ];
+                                    }
+
+                                    return [...activeDataChannelSubjects, activeDataChannelSubject];
+                                },
+                                []
+                            ),
+                            startWith([])
+                        );
+
+                        return merge(
+                            this._updateRequestsSubject.pipe(
+                                withLatestFrom(currentlyActiveDataChannelSubjects),
+                                map(([vector, activeDataChannelSubjects]) => {
+                                    activeDataChannelSubjects.forEach((activeUpdateSubject) =>
+                                        activeUpdateSubject.send({ message: { ...vector, timeOrigin: this._timeOrigin }, type: 'update' })
+                                    );
+
+                                    this._setInternalVector(vector);
+                                })
+                            ),
+                            dataChannelSubjects.pipe(
+                                mergeMap((dataChannelSubject, index) => {
+                                    if (index === 0) {
+                                        dataChannelSubject.send({ message: undefined, type: 'request' });
+                                    }
+
+                                    return dataChannelSubject.pipe(
+                                        filter(({ type }) => type === 'request'),
+                                        catchError(() => EMPTY),
+                                        tap(() => {
+                                            dataChannelSubject.send({
+                                                message: { ...this._vector, timeOrigin: this._timeOrigin },
+                                                type: 'update'
+                                            });
+                                        })
+                                    );
+                                })
+                            ),
+                            dataChannelSubjects.pipe(
+                                mergeMap((dataChannelSubject) =>
+                                    combineLatest([
+                                        dataChannelSubject.pipe(
+                                            filter((event): event is TUpdateEvent => event.type === 'update'),
+                                            map(({ message }) => message)
+                                        ),
+                                        estimateOffset(dataChannelSubject)
+                                    ]).pipe(
+                                        catchError(() => EMPTY),
+                                        distinctUntilChanged(([vectorA], [vectorB]) => vectorA === vectorB)
+                                    )
+                                ),
+                                map(([{ acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset]) => {
+                                    const timestamp = remoteTimestamp - offset;
+
+                                    if (
+                                        this._timeOrigin < timeOrigin ||
+                                        (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)
+                                    ) {
+                                        const vector = translateTimingStateVector(
+                                            this._vector,
+                                            performance.now() / 1000 - this._vector.timestamp
+                                        );
+
+                                        this._updateRequestsSubject.next(vector);
+                                    } else {
+                                        if (this._timeOrigin > timeOrigin) {
+                                            this._timeOrigin = timeOrigin;
+                                        }
+
+                                        this._setInternalVector({ acceleration, position, timestamp, velocity });
+                                    }
+                                })
+                            )
                         );
                     })
                 )
-                // tslint:disable-next-line:deprecation
-                .subscribe((dataChannelSubject) => {
-                    dataChannelSubject.send({ message: { ...this._vector, timeOrigin: this._timeOrigin }, type: 'update' });
-                });
-
-            this._remoteUpdatesSubscription = dataChannelSubjects
-                .pipe(
-                    mergeMap((dataChannelSubject) =>
-                        combineLatest([
-                            dataChannelSubject.pipe(
-                                filter((event): event is TUpdateEvent => event.type === 'update'),
-                                map(({ message }) => message)
-                            ),
-                            estimateOffset(dataChannelSubject)
-                        ]).pipe(
-                            catchError(() => EMPTY),
-                            distinctUntilChanged(([vectorA], [vectorB]) => vectorA === vectorB)
-                        )
-                    )
-                )
-                // tslint:disable-next-line:deprecation
-                .subscribe(([{ acceleration, position, timeOrigin, timestamp: remoteTimestamp, velocity }, offset]) => {
-                    const timestamp = remoteTimestamp - offset;
-
-                    if (this._timeOrigin < timeOrigin || (this._timeOrigin === timeOrigin && this._vector.timestamp > timestamp)) {
-                        const vector = translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp);
-
-                        this._updateRequestsSubject.next(vector);
-                    } else {
-                        if (this._timeOrigin > timeOrigin) {
-                            this._timeOrigin = timeOrigin;
-                        }
-
-                        this._setInternalVector({ acceleration, position, timestamp, velocity });
-                    }
-                });
-
-            dataChannelSubjects.connect();
+                .subscribe();
         }
 
         private _setInternalVector(vector: ITimingStateVector): void {
