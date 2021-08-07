@@ -13,7 +13,6 @@ import {
     first,
     ignoreElements,
     map,
-    mapTo,
     mergeMap,
     scan,
     startWith,
