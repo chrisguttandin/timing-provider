@@ -3,6 +3,7 @@ export * from './estimate-offset-factory';
 export * from './estimate-offset-function';
 export * from './event-handler';
 export * from './event-target-constructor';
+export * from './event-target-constructor-factory';
 export * from './event-target-factory';
 export * from './event-target-factory-factory';
 export * from './native-event-target';

@@ -21,6 +21,7 @@ import {
 import { online } from 'subscribable-things';
 import {
     ITimingProvider,
+    ITimingProviderEventMap,
     ITimingStateVector,
     TConnectionState,
     TEventHandler,
@@ -39,7 +40,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
     performance,
     setTimeout
 ): TTimingProviderConstructor => {
-    return class TimingProvider extends eventTargetConstructor implements ITimingProvider {
+    return class TimingProvider extends eventTargetConstructor<ITimingProviderEventMap> implements ITimingProvider {
         private _endPosition: number;
 
         private _error: null | Error;
