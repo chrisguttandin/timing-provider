@@ -1,24 +1,29 @@
 import { EMPTY, interval, zip } from 'rxjs';
-import { mask } from 'rxjs-broker';
-import { catchError, finalize, map, scan, startWith, tap } from 'rxjs/operators';
-import { TDataChannelEvent, TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
+import { catchError, filter, finalize, map, scan, startWith, tap } from 'rxjs/operators';
+import { TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
     return (dataChannelSubject) => {
-        const pingSubject = mask<TPingEvent['message'], TPingEvent, TDataChannelEvent>({ type: 'ping' }, dataChannelSubject);
-        const pongSubject = mask<TPongEvent['message'], TPongEvent, TDataChannelEvent>({ type: 'pong' }, dataChannelSubject);
+        const ping$ = dataChannelSubject.pipe(filter((event): event is TPingEvent => event.type === 'ping'));
+        const pong$ = dataChannelSubject.pipe(
+            filter((event): event is TPongEvent => event.type === 'pong'),
+            map(({ message }) => message)
+        );
+
+        const sendPing = () => dataChannelSubject.next({ message: undefined, type: 'ping' });
+        const sendPong = (now: number) => dataChannelSubject.next({ message: now, type: 'pong' });
 
         // Respond to every ping event with the current value returned by performance.now().
-        const pingSubjectSubscription = pingSubject.pipe(catchError(() => EMPTY)).subscribe(() => pongSubject.send(performance.now())); // tslint:disable-line:deprecation
+        const pingSubjectSubscription = ping$.pipe(catchError(() => EMPTY)).subscribe(() => sendPong(performance.now())); // tslint:disable-line:deprecation
 
         return zip(
             interval(1000).pipe(
                 startWith(),
                 // @todo It should be okay to send an empty message.
-                tap(() => pingSubject.send(undefined)),
+                tap(() => sendPing()),
                 map(() => performance.now())
             ),
-            pongSubject
+            pong$
         ).pipe(
             finalize(() => pingSubjectSubscription.unsubscribe()),
             // This will compute the offset with the formula "remoteTime - localTime".

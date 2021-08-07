@@ -1,6 +1,6 @@
 import { retryBackoff } from 'backoff-rxjs';
 import { ConnectableObservable, EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif } from 'rxjs';
-import { IRemoteSubject, mask, wrap } from 'rxjs-broker';
+import { IRemoteSubject, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
 import {
@@ -8,6 +8,7 @@ import {
     distinctUntilChanged,
     endWith,
     expand,
+    filter,
     first,
     ignoreElements,
     map,
@@ -29,7 +30,7 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
-import { TDataChannelEvent, TRequestEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
+import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
@@ -231,33 +232,28 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
                 publish() // tslint:disable-line:rxjs-no-connectable
             );
-            const updateSubjects = dataChannelSubjects.pipe(
-                map((dataChannelSubject) => {
-                    return mask<TUpdateEvent['message'], TUpdateEvent, TDataChannelEvent>({ type: 'update' }, dataChannelSubject);
-                })
-            );
-            const currentlyActiveUpdateSubjects = <ConnectableObservable<IRemoteSubject<TUpdateEvent['message']>[]>>updateSubjects.pipe(
-                map((updateSubject) => <[IRemoteSubject<TUpdateEvent['message']>, boolean]>[updateSubject, true]),
-                expand(([updateSubject, isExpandable]) =>
+            const currentlyActiveDataChannelSubjects = <ConnectableObservable<IRemoteSubject<TDataChannelEvent>[]>>dataChannelSubjects.pipe(
+                map((dataChannelSubject) => <[IRemoteSubject<TDataChannelEvent>, boolean]>[dataChannelSubject, true]),
+                expand(([dataChannelSubject, isExpandable]) =>
                     iif(
                         () => isExpandable,
-                        updateSubject.pipe(
+                        dataChannelSubject.pipe(
                             catchError(() => EMPTY),
                             ignoreElements(),
-                            endWith<[IRemoteSubject<TUpdateEvent['message']>, boolean]>([updateSubject, false])
+                            endWith<[IRemoteSubject<TDataChannelEvent>, boolean]>([dataChannelSubject, false])
                         ),
                         EMPTY
                     )
                 ),
-                scan<[IRemoteSubject<TUpdateEvent['message']>, boolean], IRemoteSubject<TUpdateEvent['message']>[]>(
-                    (activeUpdateSubjects, [activeUpdateSubject]) => {
-                        const index = activeUpdateSubjects.indexOf(activeUpdateSubject);
+                scan<[IRemoteSubject<TDataChannelEvent>, boolean], IRemoteSubject<TDataChannelEvent>[]>(
+                    (activeDataChannelSubjects, [activeDataChannelSubject]) => {
+                        const index = activeDataChannelSubjects.indexOf(activeDataChannelSubject);
 
                         if (index > -1) {
-                            return [...activeUpdateSubjects.slice(0, index), ...activeUpdateSubjects.slice(index + 1)];
+                            return [...activeDataChannelSubjects.slice(0, index), ...activeDataChannelSubjects.slice(index + 1)];
                         }
 
-                        return [...activeUpdateSubjects, activeUpdateSubject];
+                        return [...activeDataChannelSubjects, activeDataChannelSubject];
                     },
                     []
                 ),
@@ -265,43 +261,45 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             );
 
             // tslint:disable-next-line:deprecation
-            this._updateRequestsSubject.pipe(withLatestFrom(currentlyActiveUpdateSubjects)).subscribe(([vector, activeUpdateSubjects]) => {
-                activeUpdateSubjects.forEach((activeUpdateSubject) =>
-                    activeUpdateSubject.send({ ...vector, timeOrigin: this._timeOrigin })
-                );
+            this._updateRequestsSubject
+                .pipe(withLatestFrom(currentlyActiveDataChannelSubjects))
+                .subscribe(([vector, activeDataChannelSubjects]) => {
+                    activeDataChannelSubjects.forEach((activeUpdateSubject) =>
+                        activeUpdateSubject.send({ message: { ...vector, timeOrigin: this._timeOrigin }, type: 'update' })
+                    );
 
-                this._setInternalVector(vector);
-            });
+                    this._setInternalVector(vector);
+                });
 
-            this._remoteRequestsSubscription = updateSubjects
+            this._remoteRequestsSubscription = dataChannelSubjects
                 .pipe(
-                    withLatestFrom(dataChannelSubjects),
-                    mergeMap(([updateSubject, dataChannelSubject], index) => {
-                        const requestSubject = mask<TRequestEvent['message'], TRequestEvent, TDataChannelEvent>(
-                            { type: 'request' },
-                            dataChannelSubject
-                        );
-
+                    mergeMap((dataChannelSubject, index) => {
                         if (index === 0) {
-                            requestSubject.send(undefined);
+                            dataChannelSubject.send({ message: undefined, type: 'request' });
                         }
 
-                        return requestSubject.pipe(
-                            mapTo(updateSubject),
+                        return dataChannelSubject.pipe(
+                            filter(({ type }) => type === 'request'),
+                            mapTo(dataChannelSubject),
                             catchError(() => EMPTY)
                         );
                     })
                 )
                 // tslint:disable-next-line:deprecation
-                .subscribe((updatesSubject) => {
-                    updatesSubject.send({ ...this._vector, timeOrigin: this._timeOrigin });
+                .subscribe((dataChannelSubject) => {
+                    dataChannelSubject.send({ message: { ...this._vector, timeOrigin: this._timeOrigin }, type: 'update' });
                 });
 
-            this._remoteUpdatesSubscription = updateSubjects
+            this._remoteUpdatesSubscription = dataChannelSubjects
                 .pipe(
-                    withLatestFrom(dataChannelSubjects),
-                    mergeMap(([updateSubject, dataChannelSubject]) =>
-                        combineLatest([updateSubject, estimateOffset(dataChannelSubject)]).pipe(
+                    mergeMap((dataChannelSubject) =>
+                        combineLatest([
+                            dataChannelSubject.pipe(
+                                filter((event): event is TUpdateEvent => event.type === 'update'),
+                                map(({ message }) => message)
+                            ),
+                            estimateOffset(dataChannelSubject)
+                        ]).pipe(
                             catchError(() => EMPTY),
                             distinctUntilChanged(([vectorA], [vectorB]) => vectorA === vectorB)
                         )
