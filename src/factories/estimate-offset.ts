@@ -10,7 +10,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
             map(({ message }) => message)
         );
 
-        const sendPing = () => dataChannelSubject.next({ message: undefined, type: 'ping' });
+        const sendPing = () => dataChannelSubject.next({ type: 'ping' });
         const sendPong = (now: number) => dataChannelSubject.next({ message: now, type: 'pong' });
 
         // Respond to every ping event with the current value returned by performance.now().
@@ -19,7 +19,6 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
         return zip(
             interval(1000).pipe(
                 startWith(),
-                // @todo It should be okay to send an empty message.
                 tap(() => sendPing()),
                 map(() => performance.now())
             ),

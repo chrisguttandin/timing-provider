@@ -273,7 +273,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                             dataChannelSubjects.pipe(
                                 mergeMap((dataChannelSubject, index) => {
                                     if (index === 0) {
-                                        dataChannelSubject.send({ message: undefined, type: 'request' });
+                                        dataChannelSubject.send({ type: 'request' });
                                     }
 
                                     return dataChannelSubject.pipe(
