@@ -5,8 +5,8 @@ import { TDataChannelEvent, TEstimateOffsetFactory, TPingEvent, TPongEvent } fro
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
     return (dataChannelSubject) => {
-        const pingSubject = mask<undefined, TPingEvent, TDataChannelEvent>({ action: 'ping' }, dataChannelSubject);
-        const pongSubject = mask<number, TPongEvent, TDataChannelEvent>({ action: 'pong' }, dataChannelSubject);
+        const pingSubject = mask<TPingEvent['message'], TPingEvent, TDataChannelEvent>({ type: 'ping' }, dataChannelSubject);
+        const pongSubject = mask<TPongEvent['message'], TPongEvent, TDataChannelEvent>({ type: 'pong' }, dataChannelSubject);
 
         // Respond to every ping event with the current value returned by performance.now().
         const pingSubjectSubscription = pingSubject.pipe(catchError(() => EMPTY)).subscribe(() => pongSubject.send(performance.now())); // tslint:disable-line:deprecation
