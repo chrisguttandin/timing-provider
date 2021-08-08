@@ -225,7 +225,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                         return EMPTY;
                     }),
-                    map((dataChannel) => wrap<TDataChannelEvent>(dataChannel)),
+                    map((dataChannel) =>
+                        wrap<TDataChannelEvent>(dataChannel, {
+                            deserializer: (event) => ({ ...JSON.parse(event.data), timestamp: event.timeStamp })
+                        })
+                    ),
                     connect((dataChannelSubjects) => {
                         const currentlyActiveDataChannelSubjects = dataChannelSubjects.pipe(
                             map((dataChannelSubject) => <[IRemoteSubject<TDataChannelEvent>, boolean]>[dataChannelSubject, true]),

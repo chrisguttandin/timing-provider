@@ -7,7 +7,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
         const ping$ = dataChannelSubject.pipe(filter((event): event is TPingEvent => event.type === 'ping'));
         const pong$ = dataChannelSubject.pipe(
             filter((event): event is TPongEvent => event.type === 'pong'),
-            map(({ message }) => message)
+            map(({ message, timestamp }) => [message, timestamp ?? performance.now()] as const)
         );
 
         const sendPing = () => dataChannelSubject.next({ type: 'ping' });
@@ -26,7 +26,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
         ).pipe(
             finalize(() => pingSubjectSubscription.unsubscribe()),
             // This will compute the offset with the formula "remoteTime - localTime".
-            map(([pingTime, pongTime]) => pongTime - (pingTime + performance.now()) / 2),
+            map(([pingTime, [pongTime, eventTime]]) => pongTime - (pingTime + eventTime) / 2),
             scan<number, number[]>((latestValues, newValue) => [...latestValues.slice(-4), newValue], []),
             // @todo Do fire an update event whenever the offset changes.
             map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length),
