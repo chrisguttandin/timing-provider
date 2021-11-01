@@ -1,5 +1,5 @@
 import { retryBackoff } from 'backoff-rxjs';
-import { EMPTY, InteropObservable, Subject, Subscription, combineLatest, concat, defer, from, iif, merge } from 'rxjs';
+import { EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif, merge } from 'rxjs';
 import { IRemoteSubject, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
@@ -213,7 +213,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 }
             };
             this._subscription = concat(
-                from(<InteropObservable<boolean>>online()).pipe(equals(true), first(), ignoreElements()),
+                from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => accept(url, subjectConfig))
             )
                 .pipe(
