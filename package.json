@@ -15,7 +15,7 @@
         "rxjs-broker": "^7.1.8",
         "rxjs-connector": "^5.1.4",
         "rxjs-etc": "^10.6.1",
-        "subscribable-things": "^2.0.4",
+        "subscribable-things": "^2.0.5",
         "timing-object": "^3.1.41",
         "tslib": "^2.3.1"
     },
