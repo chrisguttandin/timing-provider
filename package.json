@@ -11,7 +11,7 @@
     "dependencies": {
         "@babel/runtime": "^7.16.7",
         "backoff-rxjs": "^6.5.7",
-        "rxjs": "^7.5.1",
+        "rxjs": "^7.5.2",
         "rxjs-broker": "^7.1.8",
         "rxjs-connector": "^5.1.4",
         "rxjs-etc": "^10.6.1",
