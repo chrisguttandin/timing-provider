@@ -14,7 +14,6 @@ import {
     ignoreElements,
     map,
     mergeMap,
-    scan,
     startWith,
     tap,
     withLatestFrom
@@ -30,6 +29,7 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
+import { maintainArray } from '../operators/maintain-array';
 import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
@@ -244,21 +244,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                     EMPTY
                                 )
                             ),
-                            scan<[IRemoteSubject<TDataChannelEvent>, boolean], IRemoteSubject<TDataChannelEvent>[]>(
-                                (activeDataChannelSubjects, [activeDataChannelSubject]) => {
-                                    const index = activeDataChannelSubjects.indexOf(activeDataChannelSubject);
-
-                                    if (index > -1) {
-                                        return [
-                                            ...activeDataChannelSubjects.slice(0, index),
-                                            ...activeDataChannelSubjects.slice(index + 1)
-                                        ];
-                                    }
-
-                                    return [...activeDataChannelSubjects, activeDataChannelSubject];
-                                },
-                                []
-                            ),
+                            maintainArray(),
                             startWith([])
                         );
 
