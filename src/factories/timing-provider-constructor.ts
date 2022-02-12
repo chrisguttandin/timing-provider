@@ -1,4 +1,3 @@
-import { retryBackoff } from 'backoff-rxjs';
 import { EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif, merge } from 'rxjs';
 import { IRemoteSubject, wrap } from 'rxjs-broker';
 import { accept } from 'rxjs-connector';
@@ -30,6 +29,7 @@ import {
     translateTimingStateVector
 } from 'timing-object';
 import { maintainArray } from '../operators/maintain-array';
+import { retryBackoff } from '../operators/retry-backoff';
 import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
@@ -217,7 +217,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 defer(() => accept(url, subjectConfig))
             )
                 .pipe(
-                    retryBackoff({ initialInterval: 1000, maxRetries: 4 }),
+                    retryBackoff(),
                     catchError((err) => {
                         this._error = err;
                         this._readyState = 'closed';
