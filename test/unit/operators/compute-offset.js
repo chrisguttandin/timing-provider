@@ -2,20 +2,24 @@ import { computeOffset } from '../../../src/operators/compute-offset';
 import { marbles } from 'rxjs-marbles';
 
 describe('computeOffset', () => {
-    let pingTime;
-    let pongTime;
-    let eventTime;
+    let localReceivedTime;
+    let localSendTime;
+    let remoteReceivedTime;
+    let remoteSendTime;
 
     beforeEach(() => {
-        pingTime = 1;
-        pongTime = 12;
-        eventTime = 3;
+        localReceivedTime = 4;
+        localSendTime = 1;
+        remoteReceivedTime = 12;
+        remoteSendTime = 13;
     });
 
     it(
         'should compute the expected offset',
         marbles((helpers) => {
-            const destination = helpers.cold('a|', { a: [pingTime, [pongTime, eventTime]] }).pipe(computeOffset());
+            const destination = helpers
+                .cold('a|', { a: [localSendTime, [remoteReceivedTime, remoteSendTime, localReceivedTime]] })
+                .pipe(computeOffset());
             const expected = helpers.cold('a|', { a: 10 });
 
             helpers.expect(destination).toBeObservable(expected);
