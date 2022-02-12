@@ -1,5 +1,6 @@
 import { EMPTY, interval, zip } from 'rxjs';
 import { catchError, filter, finalize, map, scan, startWith, tap } from 'rxjs/operators';
+import { computeOffset } from '../operators/compute-offset';
 import { TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 
 export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
@@ -25,8 +26,7 @@ export const createEstimateOffset: TEstimateOffsetFactory = (performance) => {
             pong$
         ).pipe(
             finalize(() => pingSubjectSubscription.unsubscribe()),
-            // This will compute the offset with the formula "remoteTime - localTime".
-            map(([pingTime, [pongTime, eventTime]]) => pongTime - (pingTime + eventTime) / 2),
+            computeOffset(),
             scan<number, number[]>((latestValues, newValue) => [...latestValues.slice(-4), newValue], []),
             // @todo Do fire an update event whenever the offset changes.
             map((values) => values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length),
