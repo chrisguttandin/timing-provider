@@ -3,13 +3,7 @@ export interface ISummaryEvent {
         id: string;
     };
 
-    message: {
-        message: {
-            numberOfGatheredCandidates: number;
-        };
+    numberOfGatheredCandidates: number;
 
-        type: 'summary';
-    };
-
-    type: undefined;
+    type: 'summary';
 }

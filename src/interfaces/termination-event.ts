@@ -3,9 +3,5 @@ export interface ITerminationEvent {
         id: string;
     };
 
-    message: {
-        type: 'termination';
-    };
-
-    type: undefined;
+    type: 'termination';
 }

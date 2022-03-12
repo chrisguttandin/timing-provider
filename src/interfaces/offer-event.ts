@@ -3,13 +3,7 @@ export interface IOfferEvent {
         id: string;
     };
 
-    message: {
-        message: {
-            offer: RTCSessionDescriptionInit;
-        };
+    offer: RTCSessionDescriptionInit;
 
-        type: 'offer';
-    };
-
-    type: undefined;
+    type: 'offer';
 }

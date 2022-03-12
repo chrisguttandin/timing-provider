@@ -11,7 +11,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 const receivedCandidates: RTCIceCandidateInit[] = [];
                 const send = (event: TClientEvent) => webSocket.send(JSON.stringify(event));
 
-                let mask: IRequestEvent['message']['mask'];
+                let clientId: null | string = null;
                 let numberOfAppliedCandidates = 0;
                 let numberOfExpectedCandidates = Infinity;
                 let numberOfGatheredCandidates = 0;
@@ -19,25 +19,15 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 peerConnection.addEventListener('icecandidate', ({ candidate }) => {
                     if (candidate === null) {
                         send({
-                            client: { id: mask.client.id },
-                            message: {
-                                message: {
-                                    numberOfGatheredCandidates
-                                },
-                                type: 'summary'
-                            },
-                            type: undefined
+                            client: { id: clientId! }, // tslint:disable-line:no-non-null-assertion
+                            numberOfGatheredCandidates,
+                            type: 'summary'
                         });
                     } else {
                         send({
-                            client: { id: mask.client.id },
-                            message: {
-                                message: {
-                                    candidate
-                                },
-                                type: 'candidate'
-                            },
-                            type: undefined
+                            candidate,
+                            client: { id: clientId! }, // tslint:disable-line:no-non-null-assertion
+                            type: 'candidate'
                         });
 
                         numberOfGatheredCandidates += 1;
@@ -59,19 +49,19 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 };
 
                 const processEvent = (event: IAnswerEvent | ICandidateEvent | IOfferEvent | IRequestEvent | ISummaryEvent) => {
-                    if (event.message.type === 'answer') {
-                        peerConnection.setRemoteDescription(event.message.message.answer).then(async () => {
+                    if (event.type === 'answer') {
+                        peerConnection.setRemoteDescription(event.answer).then(async () => {
                             await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
                             await addFinalCandidate(receivedCandidates.length);
                         });
-                    } else if (event.message.type === 'candidate') {
+                    } else if (event.type === 'candidate') {
                         if (peerConnection.remoteDescription === null) {
-                            receivedCandidates.push(event.message.message.candidate);
+                            receivedCandidates.push(event.candidate);
                         } else {
-                            peerConnection.addIceCandidate(event.message.message.candidate).then(() => addFinalCandidate(1));
+                            peerConnection.addIceCandidate(event.candidate).then(() => addFinalCandidate(1));
                         }
-                    } else if (event.message.type === 'offer') {
-                        mask = { client: { id: event.client?.id ?? '' } };
+                    } else if (event.type === 'offer') {
+                        clientId = event.client.id;
 
                         const unsubscribe = on(
                             peerConnection,
@@ -81,7 +71,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             emitChannel(channel);
                         });
 
-                        peerConnection.setRemoteDescription(event.message.message.offer).then(async () => {
+                        peerConnection.setRemoteDescription(event.offer).then(async () => {
                             await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
                             await addFinalCandidate(receivedCandidates.length);
 
@@ -90,24 +80,19 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             await peerConnection.setLocalDescription(answer);
 
                             send({
-                                client: { id: mask.client.id },
-                                message: {
-                                    message: {
-                                        answer
-                                    },
-                                    type: 'answer'
-                                },
-                                type: undefined
+                                answer,
+                                client: event.client,
+                                type: 'answer'
                             });
                         });
                     } else if (event.type === 'request') {
-                        if (mask !== undefined) {
+                        if (clientId !== null) {
                             return;
                         }
 
-                        mask = event.message.mask;
+                        clientId = event.client.id;
 
-                        const dataChannel = peerConnection.createDataChannel(event.message.label, { ordered: true });
+                        const dataChannel = peerConnection.createDataChannel(event.label, { ordered: true });
 
                         const unsubscribe = on(
                             dataChannel,
@@ -121,18 +106,13 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             await peerConnection.setLocalDescription(offer);
 
                             send({
-                                client: { id: event.message.mask.client.id },
-                                message: {
-                                    message: {
-                                        offer
-                                    },
-                                    type: 'offer'
-                                },
-                                type: undefined
+                                client: event.client,
+                                offer,
+                                type: 'offer'
                             });
                         });
-                    } else if (event.message.type === 'summary') {
-                        numberOfExpectedCandidates = event.message.message.numberOfGatheredCandidates;
+                    } else if (event.type === 'summary') {
+                        numberOfExpectedCandidates = event.numberOfGatheredCandidates;
 
                         addFinalCandidate(0);
                     }

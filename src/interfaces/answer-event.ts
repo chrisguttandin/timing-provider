@@ -1,15 +1,9 @@
 export interface IAnswerEvent {
+    answer: RTCSessionDescriptionInit;
+
     client: {
         id: string;
     };
 
-    message: {
-        message: {
-            answer: RTCSessionDescriptionInit;
-        };
-
-        type: 'answer';
-    };
-
-    type: undefined;
+    type: 'answer';
 }

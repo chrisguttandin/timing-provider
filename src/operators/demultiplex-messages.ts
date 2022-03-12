@@ -30,10 +30,10 @@ export const demultiplexMessages =
                     observer.error(err);
                 },
                 next(event): void {
-                    const remoteClientId = event.type === 'request' ? event.message.mask.client.id : event.client.id;
+                    const remoteClientId = event.client.id;
                     const [subject, subscription] = subjects.get(remoteClientId) ?? [null, null];
 
-                    if (event.message.type === 'termination') {
+                    if (event.type === 'termination') {
                         if (subscription !== null) {
                             subscription.unsubscribe();
                         }
@@ -52,9 +52,9 @@ export const demultiplexMessages =
                                 newSubject.pipe(last()).subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
                             ]);
                             observer.next(newSubject);
-                            newSubject.next(<TClientEvent | IRequestEvent>event);
+                            newSubject.next(event);
                         } else if (subject !== null) {
-                            subject.next(<TClientEvent | IRequestEvent>event);
+                            subject.next(event);
                         }
                     }
                 }

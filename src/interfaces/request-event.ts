@@ -1,17 +1,9 @@
 export interface IRequestEvent {
-    client: undefined;
-
-    message: {
-        label: string;
-
-        mask: {
-            client: {
-                id: string;
-            };
-        };
-
-        type: undefined;
+    client: {
+        id: string;
     };
+
+    label: string;
 
     type: 'request';
 }

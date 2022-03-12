@@ -1,15 +1,9 @@
 export interface ICandidateEvent {
+    candidate: RTCIceCandidateInit;
+
     client: {
         id: string;
     };
 
-    message: {
-        message: {
-            candidate: RTCIceCandidateInit;
-        };
-
-        type: 'candidate';
-    };
-
-    type: undefined;
+    type: 'candidate';
 }

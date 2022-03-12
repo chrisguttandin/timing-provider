@@ -41,12 +41,8 @@ describe('demultiplexMessages', () => {
         beforeEach(
             () =>
                 (event = {
-                    message: {
-                        mask: {
-                            client: {
-                                id: clientId
-                            }
-                        }
+                    client: {
+                        id: clientId
                     },
                     type: 'request'
                 })
@@ -73,9 +69,7 @@ describe('demultiplexMessages', () => {
                     client: {
                         id: clientId
                     },
-                    message: {
-                        type: 'candidate'
-                    }
+                    type: 'candidate'
                 })
         );
 
@@ -100,9 +94,7 @@ describe('demultiplexMessages', () => {
                     client: {
                         id: clientId
                     },
-                    message: {
-                        type: 'description'
-                    }
+                    type: 'description'
                 })
         );
 
@@ -127,9 +119,7 @@ describe('demultiplexMessages', () => {
                     client: {
                         id: clientId
                     },
-                    message: {
-                        type: 'summary'
-                    }
+                    type: 'summary'
                 })
         );
 
@@ -154,9 +144,7 @@ describe('demultiplexMessages', () => {
                     client: {
                         id: clientId
                     },
-                    message: {
-                        type: 'termination'
-                    }
+                    type: 'termination'
                 })
         );
 
