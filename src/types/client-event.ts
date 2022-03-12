@@ -1,3 +1,3 @@
-import { ICandidateEvent, IDescriptionEvent, ISummaryEvent } from '../interfaces';
+import { IAnswerEvent, ICandidateEvent, IOfferEvent, ISummaryEvent } from '../interfaces';
 
-export type TClientEvent = ICandidateEvent | IDescriptionEvent | ISummaryEvent;
+export type TClientEvent = IAnswerEvent | ICandidateEvent | IOfferEvent | ISummaryEvent;

@@ -7,7 +7,5 @@ export interface ITerminationEvent {
         type: 'termination';
     };
 
-    token: string;
-
     type: undefined;
 }

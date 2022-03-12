@@ -30,8 +30,8 @@ export const demultiplexMessages =
                     observer.error(err);
                 },
                 next(event): void {
-                    const token = event.type === 'request' ? event.message.mask.token : event.token;
-                    const [subject, subscription] = subjects.get(token) ?? [null, null];
+                    const remoteClientId = event.type === 'request' ? event.message.mask.client.id : event.client.id;
+                    const [subject, subscription] = subjects.get(remoteClientId) ?? [null, null];
 
                     if (event.message.type === 'termination') {
                         if (subscription !== null) {
@@ -42,14 +42,14 @@ export const demultiplexMessages =
                             subject.complete();
                         }
 
-                        subjects.set(token, [null, timer().subscribe(() => subjects.delete(token))]); // tslint:disable-line:rxjs-no-nested-subscribe
+                        subjects.set(remoteClientId, [null, timer().subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
                     } else {
                         if (subject === null && subscription === null) {
                             const newSubject = new Subject<TClientEvent | IRequestEvent>();
 
-                            subjects.set(token, [
+                            subjects.set(remoteClientId, [
                                 newSubject,
-                                newSubject.pipe(last()).subscribe(() => subjects.delete(token)) // tslint:disable-line:rxjs-no-nested-subscribe
+                                newSubject.pipe(last()).subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
                             ]);
                             observer.next(newSubject);
                             newSubject.next(<TClientEvent | IRequestEvent>event);

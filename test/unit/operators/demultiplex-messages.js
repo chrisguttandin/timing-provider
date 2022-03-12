@@ -2,10 +2,10 @@ import { demultiplexMessages } from '../../../src/operators/demultiplex-messages
 import { marbles } from 'rxjs-marbles';
 
 describe('demultiplexMessages', () => {
-    let token;
+    let clientId;
 
     beforeEach(() => {
-        token = 'a fake token';
+        clientId = 'a fake client id';
     });
 
     describe('without any event', () => {
@@ -43,7 +43,9 @@ describe('demultiplexMessages', () => {
                 (event = {
                     message: {
                         mask: {
-                            token
+                            client: {
+                                id: clientId
+                            }
                         }
                     },
                     type: 'request'
@@ -68,10 +70,12 @@ describe('demultiplexMessages', () => {
         beforeEach(
             () =>
                 (event = {
+                    client: {
+                        id: clientId
+                    },
                     message: {
                         type: 'candidate'
-                    },
-                    token
+                    }
                 })
         );
 
@@ -93,10 +97,12 @@ describe('demultiplexMessages', () => {
         beforeEach(
             () =>
                 (event = {
+                    client: {
+                        id: clientId
+                    },
                     message: {
                         type: 'description'
-                    },
-                    token
+                    }
                 })
         );
 
@@ -118,10 +124,12 @@ describe('demultiplexMessages', () => {
         beforeEach(
             () =>
                 (event = {
+                    client: {
+                        id: clientId
+                    },
                     message: {
                         type: 'summary'
-                    },
-                    token
+                    }
                 })
         );
 
@@ -143,10 +151,12 @@ describe('demultiplexMessages', () => {
         beforeEach(
             () =>
                 (event = {
+                    client: {
+                        id: clientId
+                    },
                     message: {
                         type: 'termination'
-                    },
-                    token
+                    }
                 })
         );
 

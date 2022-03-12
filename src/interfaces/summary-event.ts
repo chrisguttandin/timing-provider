@@ -11,7 +11,5 @@ export interface ISummaryEvent {
         type: 'summary';
     };
 
-    token: string;
-
     type: undefined;
 }

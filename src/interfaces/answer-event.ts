@@ -1,14 +1,14 @@
-export interface ICandidateEvent {
+export interface IAnswerEvent {
     client: {
         id: string;
     };
 
     message: {
         message: {
-            candidate: RTCIceCandidateInit;
+            answer: RTCSessionDescriptionInit;
         };
 
-        type: 'candidate';
+        type: 'answer';
     };
 
     type: undefined;

@@ -1,18 +1,16 @@
 import { Observable, Subject, mergeMap } from 'rxjs';
 import { on } from 'subscribable-things';
-import { ICandidateEvent, IDescriptionEvent, IRequestEvent, ISummaryEvent } from '../interfaces';
+import { IAnswerEvent, ICandidateEvent, IOfferEvent, IRequestEvent, ISummaryEvent } from '../interfaces';
 import { TClientEvent } from '../types';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     mergeMap(
-        (subject: Subject<IRequestEvent | ICandidateEvent | IDescriptionEvent | ISummaryEvent>) =>
+        (subject: Subject<IAnswerEvent | ICandidateEvent | IOfferEvent | IRequestEvent | ISummaryEvent>) =>
             new Observable<RTCDataChannel>((observer) => {
                 const peerConnection = createPeerConnection();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
                 const send = (event: TClientEvent) => webSocket.send(JSON.stringify(event));
-                const unprocessedEvents: (IRequestEvent | ICandidateEvent | IDescriptionEvent | ISummaryEvent)[] = [];
 
-                let isActive: boolean;
                 let mask: IRequestEvent['message']['mask'];
                 let numberOfAppliedCandidates = 0;
                 let numberOfExpectedCandidates = Infinity;
@@ -28,7 +26,6 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 },
                                 type: 'summary'
                             },
-                            token: mask.token,
                             type: undefined
                         });
                     } else {
@@ -40,7 +37,6 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 },
                                 type: 'candidate'
                             },
-                            token: mask.token,
                             type: undefined
                         });
 
@@ -62,78 +58,79 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     }
                 };
 
-                const processEvent = (event: IRequestEvent | ICandidateEvent | IDescriptionEvent | ISummaryEvent) => {
-                    if (event.message.type === 'candidate') {
+                const processEvent = (event: IAnswerEvent | ICandidateEvent | IOfferEvent | IRequestEvent | ISummaryEvent) => {
+                    if (event.message.type === 'answer') {
+                        peerConnection.setRemoteDescription(event.message.message.answer).then(async () => {
+                            await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
+                            await addFinalCandidate(receivedCandidates.length);
+                        });
+                    } else if (event.message.type === 'candidate') {
                         if (peerConnection.remoteDescription === null) {
                             receivedCandidates.push(event.message.message.candidate);
                         } else {
                             peerConnection.addIceCandidate(event.message.message.candidate).then(() => addFinalCandidate(1));
                         }
-                    } else if (event.message.type === 'description') {
-                        peerConnection.setRemoteDescription(event.message.message.description).then(async () => {
+                    } else if (event.message.type === 'offer') {
+                        mask = { client: { id: event.client?.id ?? '' } };
+
+                        const unsubscribe = on(
+                            peerConnection,
+                            'datachannel'
+                        )(({ channel }) => {
+                            unsubscribe();
+                            emitChannel(channel);
+                        });
+
+                        peerConnection.setRemoteDescription(event.message.message.offer).then(async () => {
                             await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
                             await addFinalCandidate(receivedCandidates.length);
 
-                            if (!isActive) {
-                                const description = await peerConnection.createAnswer();
+                            const answer = await peerConnection.createAnswer();
 
-                                await peerConnection.setLocalDescription(description);
+                            await peerConnection.setLocalDescription(answer);
 
-                                send({
-                                    client: { id: mask.client.id },
+                            send({
+                                client: { id: mask.client.id },
+                                message: {
                                     message: {
-                                        message: {
-                                            description
-                                        },
-                                        type: 'description'
+                                        answer
                                     },
-                                    token: mask.token,
-                                    type: undefined
-                                });
-                            }
+                                    type: 'answer'
+                                },
+                                type: undefined
+                            });
                         });
                     } else if (event.type === 'request') {
-                        mask = event.message.mask;
-                        isActive = event.message.isActive;
-
-                        if (event.message.isActive) {
-                            const dataChannel = peerConnection.createDataChannel(event.message.label, { ordered: true });
-
-                            const unsubscribe = on(
-                                dataChannel,
-                                'open'
-                            )(() => {
-                                unsubscribe();
-                                emitChannel(dataChannel);
-                            });
-
-                            peerConnection.createOffer().then(async (description) => {
-                                await peerConnection.setLocalDescription(description);
-
-                                send({
-                                    client: { id: event.message.mask.client.id },
-                                    message: {
-                                        message: {
-                                            description
-                                        },
-                                        type: 'description'
-                                    },
-                                    token: event.message.mask.token,
-                                    type: undefined
-                                });
-                            });
-                        } else {
-                            const unsubscribe = on(
-                                peerConnection,
-                                'datachannel'
-                            )(({ channel }) => {
-                                unsubscribe();
-                                emitChannel(channel);
-                            });
+                        if (mask !== undefined) {
+                            return;
                         }
 
-                        unprocessedEvents.forEach(processEvent);
-                        unprocessedEvents.length = 0;
+                        mask = event.message.mask;
+
+                        const dataChannel = peerConnection.createDataChannel(event.message.label, { ordered: true });
+
+                        const unsubscribe = on(
+                            dataChannel,
+                            'open'
+                        )(() => {
+                            unsubscribe();
+                            emitChannel(dataChannel);
+                        });
+
+                        peerConnection.createOffer().then(async (offer) => {
+                            await peerConnection.setLocalDescription(offer);
+
+                            send({
+                                client: { id: event.message.mask.client.id },
+                                message: {
+                                    message: {
+                                        offer
+                                    },
+                                    type: 'offer'
+                                },
+                                type: undefined
+                            });
+                        });
                     } else if (event.message.type === 'summary') {
                         numberOfExpectedCandidates = event.message.message.numberOfGatheredCandidates;
 

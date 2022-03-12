@@ -1,35 +1,17 @@
 export interface IRequestEvent {
-    message:
-        | {
-              isActive: true;
+    client: undefined;
 
-              label: string;
+    message: {
+        label: string;
 
-              mask: {
-                  client: {
-                      id: string;
-                  };
+        mask: {
+            client: {
+                id: string;
+            };
+        };
 
-                  token: string;
-              };
-
-              type: undefined;
-          }
-        | {
-              isActive: false;
-
-              label: undefined;
-
-              mask: {
-                  client: {
-                      id: string;
-                  };
-
-                  token: string;
-              };
-
-              type: undefined;
-          };
+        type: undefined;
+    };
 
     type: 'request';
 }

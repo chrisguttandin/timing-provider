@@ -1,14 +1,14 @@
-export interface ICandidateEvent {
+export interface IOfferEvent {
     client: {
         id: string;
     };
 
     message: {
         message: {
-            candidate: RTCIceCandidateInit;
+            offer: RTCSessionDescriptionInit;
         };
 
-        type: 'candidate';
+        type: 'offer';
     };
 
     type: undefined;
