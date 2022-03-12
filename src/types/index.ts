@@ -1,3 +1,4 @@
+export * from './client-event';
 export * from './data-channel-event';
 export * from './estimate-offset-factory';
 export * from './estimate-offset-function';
@@ -14,4 +15,5 @@ export * from './timing-provider-constructor';
 export * from './timing-provider-constructor-factory';
 export * from './update-event';
 export * from './wait-for-event-function';
+export * from './web-socket-event';
 export * from './wrap-event-listener-function';

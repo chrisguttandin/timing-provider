@@ -1,6 +1,5 @@
-import { EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif, merge } from 'rxjs';
+import { EMPTY, Subject, Subscription, combineLatest, concat, defer, from, iif, merge, timer } from 'rxjs';
 import { IRemoteSubject, wrap } from 'rxjs-broker';
-import { accept } from 'rxjs-connector';
 import { equals } from 'rxjs-etc/operators';
 import {
     catchError,
@@ -17,7 +16,7 @@ import {
     tap,
     withLatestFrom
 } from 'rxjs/operators';
-import { online } from 'subscribable-things';
+import { on, online } from 'subscribable-things';
 import {
     ITimingProvider,
     ITimingProviderEventMap,
@@ -28,9 +27,14 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
+import { IInitEvent } from '../interfaces';
+import { consumeInitEvent } from '../operators/consume-init-event';
+import { demultiplexMessages } from '../operators/demultiplex-messages';
+import { enforceOrder } from '../operators/enforce-order';
 import { maintainArray } from '../operators/maintain-array';
+import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
-import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent } from '../types';
+import { TDataChannelEvent, TTimingProviderConstructor, TTimingProviderConstructorFactory, TUpdateEvent, TWebSocketEvent } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
@@ -214,7 +218,28 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             };
             this._subscription = concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
-                defer(() => accept(url, subjectConfig))
+                defer(() => {
+                    const webSocket = new WebSocket(url);
+
+                    webSocket.onopen = () => subjectConfig?.openObserver?.next();
+
+                    return from(on(webSocket, 'message')).pipe(
+                        map((event) => <TWebSocketEvent>JSON.parse(event.data)),
+                        enforceOrder((event): event is IInitEvent => event.type === 'init'),
+                        consumeInitEvent(
+                            (event): event is IInitEvent => event.type === 'init',
+                            () => {} // tslint:disable-line:no-empty
+                        ),
+                        demultiplexMessages(() => timer(10_000)),
+                        negotiateDataChannels(
+                            () =>
+                                new RTCPeerConnection({
+                                    iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
+                                }),
+                            webSocket
+                        )
+                    );
+                })
             )
                 .pipe(
                     retryBackoff(),
