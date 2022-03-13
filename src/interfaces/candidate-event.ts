@@ -1,6 +1,4 @@
-export interface ICandidateEvent {
-    candidate: RTCIceCandidateInit;
-
+export interface ICandidateEvent extends RTCIceCandidateInit {
     client: {
         id: string;
     };

@@ -1,11 +1,11 @@
 import { Observable, Subject, mergeMap } from 'rxjs';
 import { on } from 'subscribable-things';
-import { IAnswerEvent, ICandidateEvent, IOfferEvent, IRequestEvent, ISummaryEvent } from '../interfaces';
+import { ICandidateEvent, IDescriptionEvent, IRequestEvent, ISummaryEvent } from '../interfaces';
 import { TClientEvent } from '../types';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     mergeMap(
-        (subject: Subject<IAnswerEvent | ICandidateEvent | IOfferEvent | IRequestEvent | ISummaryEvent>) =>
+        (subject: Subject<ICandidateEvent | IDescriptionEvent | IRequestEvent | ISummaryEvent>) =>
             new Observable<RTCDataChannel>((observer) => {
                 const peerConnection = createPeerConnection();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
@@ -25,7 +25,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         });
                     } else {
                         send({
-                            candidate,
+                            ...candidate.toJSON(),
                             client: { id: clientId! }, // tslint:disable-line:no-non-null-assertion
                             type: 'candidate'
                         });
@@ -48,19 +48,24 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     }
                 };
 
-                const processEvent = (event: IAnswerEvent | ICandidateEvent | IOfferEvent | IRequestEvent | ISummaryEvent) => {
-                    if (event.type === 'answer') {
-                        peerConnection.setRemoteDescription(event.answer).then(async () => {
+                const jsonifyDescription = (description: RTCSessionDescription | RTCSessionDescriptionInit): RTCSessionDescriptionInit =>
+                    description instanceof RTCSessionDescription ? description.toJSON() : description;
+
+                const processEvent = (event: ICandidateEvent | IDescriptionEvent | IRequestEvent | ISummaryEvent) => {
+                    const { type } = event;
+
+                    if (type === 'answer') {
+                        peerConnection.setRemoteDescription(event).then(async () => {
                             await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
                             await addFinalCandidate(receivedCandidates.length);
                         });
-                    } else if (event.type === 'candidate') {
+                    } else if (type === 'candidate') {
                         if (peerConnection.remoteDescription === null) {
-                            receivedCandidates.push(event.candidate);
+                            receivedCandidates.push(event);
                         } else {
-                            peerConnection.addIceCandidate(event.candidate).then(() => addFinalCandidate(1));
+                            peerConnection.addIceCandidate(event).then(() => addFinalCandidate(1));
                         }
-                    } else if (event.type === 'offer') {
+                    } else if (type === 'offer') {
                         clientId = event.client.id;
 
                         const unsubscribe = on(
@@ -71,7 +76,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             emitChannel(channel);
                         });
 
-                        peerConnection.setRemoteDescription(event.offer).then(async () => {
+                        peerConnection.setRemoteDescription(event).then(async () => {
                             await Promise.all(receivedCandidates.map((candidate) => peerConnection.addIceCandidate(candidate)));
                             await addFinalCandidate(receivedCandidates.length);
 
@@ -80,12 +85,11 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             await peerConnection.setLocalDescription(answer);
 
                             send({
-                                answer,
-                                client: event.client,
-                                type: 'answer'
+                                ...jsonifyDescription(answer),
+                                client: event.client
                             });
                         });
-                    } else if (event.type === 'request') {
+                    } else if (type === 'request') {
                         if (clientId !== null) {
                             return;
                         }
@@ -106,12 +110,11 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             await peerConnection.setLocalDescription(offer);
 
                             send({
-                                client: event.client,
-                                offer,
-                                type: 'offer'
+                                ...jsonifyDescription(offer),
+                                client: event.client
                             });
                         });
-                    } else if (event.type === 'summary') {
+                    } else if (type === 'summary') {
                         numberOfExpectedCandidates = event.numberOfGatheredCandidates;
 
                         addFinalCandidate(0);
