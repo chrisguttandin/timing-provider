@@ -1,5 +1,4 @@
-import { EMPTY, interval, zip } from 'rxjs';
-import { catchError, filter, finalize, map, scan, startWith, tap } from 'rxjs/operators';
+import { EMPTY, catchError, filter, finalize, interval, map, scan, startWith, tap, zip } from 'rxjs';
 import { computeOffset } from '../operators/compute-offset';
 import { TEstimateOffsetFactory, TPingEvent, TPongEvent } from '../types';
 

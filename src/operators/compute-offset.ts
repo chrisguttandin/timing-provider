@@ -1,5 +1,4 @@
-import { OperatorFunction } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { OperatorFunction, map } from 'rxjs';
 
 /*
  * This will compute the offset with the formula `remoteTime - localTime`. That means a positive offset indicates that `remoteTime` is

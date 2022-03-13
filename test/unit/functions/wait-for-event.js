@@ -1,7 +1,6 @@
-import { finalize, takeUntil } from 'rxjs/operators';
+import { finalize, merge, takeUntil } from 'rxjs';
 import { spy, stub } from 'sinon';
 import { marbles } from 'rxjs-marbles';
-import { merge } from 'rxjs';
 import { waitForEvent } from '../../../src/functions/wait-for-event';
 
 describe('waitForEvent', () => {
