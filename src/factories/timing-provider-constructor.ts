@@ -11,6 +11,7 @@ import {
     endWith,
     expand,
     filter,
+    finalize,
     first,
     from,
     ignoreElements,
@@ -18,7 +19,9 @@ import {
     map,
     merge,
     mergeMap,
+    repeat,
     startWith,
+    takeUntil,
     tap,
     timer,
     withLatestFrom
@@ -220,8 +223,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             const subjectConfig = {
                 openObserver: {
                     next: () => {
-                        this._readyState = 'open';
-                        this.dispatchEvent(new Event('readystatechange'));
+                        if (this._readyState === 'connecting') {
+                            this._readyState = 'open';
+                            this.dispatchEvent(new Event('readystatechange'));
+                        }
                     }
                 }
             };
@@ -233,6 +238,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     webSocket.onopen = () => subjectConfig?.openObserver?.next();
 
                     return from(on(webSocket, 'message')).pipe(
+                        finalize(() => webSocket.close()),
                         map((event) => <TWebSocketEvent>JSON.parse(event.data)),
                         enforceOrder((event): event is IInitEvent => event.type === 'init'),
                         consumeInitEvent(
@@ -246,11 +252,13 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                     iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
                                 }),
                             webSocket
-                        )
+                        ),
+                        takeUntil(merge(on(webSocket, 'close'), on(webSocket, 'error')))
                     );
                 })
             )
                 .pipe(
+                    repeat(),
                     retryBackoff(),
                     catchError((err) => {
                         this._error = err;
