@@ -5,9 +5,9 @@ import { TClientEvent } from '../types';
 export const demultiplexMessages =
     (
         timer: () => Observable<unknown>
-    ): OperatorFunction<IRequestEvent | ITerminationEvent | TClientEvent, Subject<IRequestEvent | TClientEvent>> =>
+    ): OperatorFunction<IRequestEvent | ITerminationEvent | TClientEvent, [string, Subject<IRequestEvent | TClientEvent>]> =>
     (source) =>
-        new Observable<Subject<IRequestEvent | TClientEvent>>((observer) => {
+        new Observable<[string, Subject<IRequestEvent | TClientEvent>]>((observer) => {
             const subjects = new Map<string, [null | Subject<IRequestEvent | TClientEvent>, Subscription]>();
 
             const clearAll = () => {
@@ -51,7 +51,7 @@ export const demultiplexMessages =
                                 newSubject,
                                 newSubject.pipe(last()).subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
                             ]);
-                            observer.next(newSubject);
+                            observer.next([remoteClientId, newSubject]);
                             newSubject.next(event);
                         } else if (subject !== null) {
                             subject.next(event);

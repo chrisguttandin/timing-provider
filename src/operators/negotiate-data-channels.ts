@@ -5,13 +5,12 @@ import { TClientEvent } from '../types';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     mergeMap(
-        (subject: Subject<ICandidateEvent | IDescriptionEvent | IRequestEvent | ISummaryEvent>) =>
+        ([clientId, subject]: [string, Subject<IRequestEvent | TClientEvent>]) =>
             new Observable<RTCDataChannel>((observer) => {
                 const peerConnection = createPeerConnection();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
                 const send = (event: TClientEvent) => webSocket.send(JSON.stringify(event));
 
-                let clientId: null | string = null;
                 let numberOfAppliedCandidates = 0;
                 let numberOfExpectedCandidates = Infinity;
                 let numberOfGatheredCandidates = 0;
@@ -19,14 +18,14 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 peerConnection.addEventListener('icecandidate', ({ candidate }) => {
                     if (candidate === null) {
                         send({
-                            client: { id: clientId! }, // tslint:disable-line:no-non-null-assertion
+                            client: { id: clientId },
                             numberOfGatheredCandidates,
                             type: 'summary'
                         });
                     } else {
                         send({
                             ...candidate.toJSON(),
-                            client: { id: clientId! }, // tslint:disable-line:no-non-null-assertion
+                            client: { id: clientId },
                             type: 'candidate'
                         });
 
@@ -66,8 +65,6 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             peerConnection.addIceCandidate(event).then(() => addFinalCandidate(1));
                         }
                     } else if (type === 'offer') {
-                        clientId = event.client.id;
-
                         const unsubscribe = on(
                             peerConnection,
                             'datachannel'
@@ -86,16 +83,10 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
 
                             send({
                                 ...jsonifyDescription(answer),
-                                client: event.client
+                                client: { id: clientId }
                             });
                         });
                     } else if (type === 'request') {
-                        if (clientId !== null) {
-                            return;
-                        }
-
-                        clientId = event.client.id;
-
                         const dataChannel = peerConnection.createDataChannel(event.label, { ordered: true });
 
                         const unsubscribe = on(
@@ -111,7 +102,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
 
                             send({
                                 ...jsonifyDescription(offer),
-                                client: event.client
+                                client: { id: clientId }
                             });
                         });
                     } else if (type === 'summary') {
