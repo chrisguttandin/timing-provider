@@ -1,5 +1,6 @@
 export * from './candidate-event';
 export * from './description-event';
+export * from './error-event';
 export * from './event-target';
 export * from './init-event';
 export * from './request-event';

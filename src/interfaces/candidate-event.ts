@@ -4,4 +4,6 @@ export interface ICandidateEvent extends RTCIceCandidateInit {
     };
 
     type: 'candidate';
+
+    version: number;
 }

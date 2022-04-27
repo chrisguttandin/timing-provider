@@ -6,4 +6,6 @@ export interface ISummaryEvent {
     numberOfGatheredCandidates: number;
 
     type: 'summary';
+
+    version: number;
 }
