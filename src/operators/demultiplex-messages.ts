@@ -5,10 +5,10 @@ import { TClientEvent } from '../types';
 export const demultiplexMessages =
     (
         timer: () => Observable<unknown>
-    ): OperatorFunction<TClientEvent | IRequestEvent | ITerminationEvent, Subject<TClientEvent | IRequestEvent>> =>
+    ): OperatorFunction<IRequestEvent | ITerminationEvent | TClientEvent, Subject<IRequestEvent | TClientEvent>> =>
     (source) =>
-        new Observable<Subject<TClientEvent | IRequestEvent>>((observer) => {
-            const subjects = new Map<string, [null | Subject<TClientEvent | IRequestEvent>, Subscription]>();
+        new Observable<Subject<IRequestEvent | TClientEvent>>((observer) => {
+            const subjects = new Map<string, [null | Subject<IRequestEvent | TClientEvent>, Subscription]>();
 
             const clearAll = () => {
                 subjects.forEach(([subject, subscription]) => {
@@ -45,7 +45,7 @@ export const demultiplexMessages =
                         subjects.set(remoteClientId, [null, timer().subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
                     } else {
                         if (subject === null && subscription === null) {
-                            const newSubject = new Subject<TClientEvent | IRequestEvent>();
+                            const newSubject = new Subject<IRequestEvent | TClientEvent>();
 
                             subjects.set(remoteClientId, [
                                 newSubject,
