@@ -1,5 +1,5 @@
 export interface IInitEvent {
-    type: 'init';
+    origin: number;
 
-    version: number;
+    type: 'init';
 }

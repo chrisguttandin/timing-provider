@@ -1,8 +1,8 @@
 import { TStringifyableJsonObject } from 'rxjs-broker';
-import { ITimingStateVector } from 'timing-object';
+import { TExtendedTimingStateVector } from './extended-timing-state-vector';
 
 export type TUpdateEvent = TStringifyableJsonObject<{
-    message: TStringifyableJsonObject<{ [P in keyof ITimingStateVector]: ITimingStateVector[P] } & { readonly timeOrigin: number }>;
+    message: TStringifyableJsonObject<{ [P in keyof TExtendedTimingStateVector]: TExtendedTimingStateVector[P] }>;
 
     timestamp?: number;
 

@@ -7,6 +7,7 @@ export * from './event-target-constructor';
 export * from './event-target-constructor-factory';
 export * from './event-target-factory';
 export * from './event-target-factory-factory';
+export * from './extended-timing-state-vector';
 export * from './native-event-target';
 export * from './ping-event';
 export * from './pong-event';
