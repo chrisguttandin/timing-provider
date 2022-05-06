@@ -4,7 +4,7 @@ import { TClientEvent } from '../types';
 
 export const demultiplexMessages =
     (
-        timer: () => Observable<unknown>
+        timer: Observable<unknown>
     ): OperatorFunction<IRequestEvent | ITerminationEvent | TClientEvent, [string, Subject<IRequestEvent | TClientEvent>]> =>
     (source) =>
         new Observable<[string, Subject<IRequestEvent | TClientEvent>]>((observer) => {
@@ -42,7 +42,7 @@ export const demultiplexMessages =
                             subject.complete();
                         }
 
-                        subjects.set(remoteClientId, [null, timer().subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
+                        subjects.set(remoteClientId, [null, timer.subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
                     } else {
                         if (subject === null && subscription === null) {
                             const newSubject = new Subject<IRequestEvent | TClientEvent>();

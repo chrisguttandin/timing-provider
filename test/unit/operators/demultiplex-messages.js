@@ -13,7 +13,7 @@ describe('demultiplexMessages', () => {
         it(
             'should mirror an empty observable',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('|').pipe(demultiplexMessages(timer));
                 const expected = helpers.cold('|');
 
@@ -27,7 +27,7 @@ describe('demultiplexMessages', () => {
             'should mirror an error observable',
             marbles((helpers) => {
                 const err = new Error('a fake error');
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('#', null, err).pipe(demultiplexMessages(timer));
                 const expected = helpers.cold('#', null, err);
 
@@ -52,7 +52,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
@@ -65,7 +65,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with a subject that emits the event',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(timer),
                     mergeMap(([, subject]) => subject)
@@ -93,7 +93,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
@@ -106,7 +106,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with a subject that emits the event',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(timer),
                     mergeMap(([, subject]) => subject)
@@ -134,7 +134,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
@@ -147,7 +147,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with a subject that emits the event',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(timer),
                     mergeMap(([, subject]) => subject)
@@ -175,7 +175,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
@@ -188,7 +188,7 @@ describe('demultiplexMessages', () => {
         it(
             'should emit an observable with a subject that emits the event',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(timer),
                     mergeMap(([, subject]) => subject)
@@ -216,7 +216,7 @@ describe('demultiplexMessages', () => {
         it(
             'should not emit any observable',
             marbles((helpers) => {
-                const timer = () => helpers.cold('a|');
+                const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
                 const expected = helpers.cold('-|');
 

@@ -264,7 +264,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                             (event): event is IInitEvent => event.type === 'init',
                             ({ origin }) => (this._origin = origin)
                         ),
-                        demultiplexMessages(() => timer(10_000)),
+                        demultiplexMessages(timer(10_000)),
                         negotiateDataChannels(
                             () =>
                                 new RTCPeerConnection({
