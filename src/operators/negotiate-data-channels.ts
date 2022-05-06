@@ -1,4 +1,4 @@
-import { Observable, Subject, concatMap, defer, finalize, from, merge, mergeMap, of, retryWhen, throwError } from 'rxjs';
+import { Observable, Subject, concatMap, defer, finalize, from, merge, mergeMap, of, retry, throwError } from 'rxjs';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
 import { IErrorEvent, IRequestEvent } from '../interfaces';
 import { TClientEvent } from '../types';
@@ -263,34 +263,32 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 )
                     .pipe(
                         concatMap((event) => processEvent(event)),
-                        retryWhen((errors) =>
-                            errors.pipe(
-                                concatMap((err) => {
-                                    if (err === unrecoverableError) {
-                                        // tslint:disable-next-line:rxjs-throw-error
-                                        return throwError(() => err);
-                                    }
+                        retry({
+                            delay: (err) => {
+                                if (err === unrecoverableError) {
+                                    // tslint:disable-next-line:rxjs-throw-error
+                                    return throwError(() => err);
+                                }
 
-                                    errorEvents.length = 0;
+                                errorEvents.length = 0;
 
-                                    const errorEvent = <const>{
-                                        client: { id: clientId },
-                                        type: 'error',
-                                        version
-                                    };
+                                const errorEvent = <const>{
+                                    client: { id: clientId },
+                                    type: 'error',
+                                    version
+                                };
 
-                                    if (label === null) {
-                                        send(errorEvent);
+                                if (label === null) {
+                                    send(errorEvent);
 
-                                        resetState(version + 1);
-                                    } else {
-                                        errorEvents.push(errorEvent);
-                                    }
+                                    resetState(version + 1);
+                                } else {
+                                    errorEvents.push(errorEvent);
+                                }
 
-                                    return of(null);
-                                })
-                            )
-                        ),
+                                return of(null);
+                            }
+                        }),
                         finalize(() => {
                             unsubscribeFromCandidates();
                             unsubscribeFromDataChannel?.();
