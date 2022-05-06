@@ -1,7 +1,8 @@
-import { Observable, Subject, concatMap, defer, finalize, from, merge, mergeMap, of, retry, throwError } from 'rxjs';
+import { Observable, Subject, concatMap, defer, finalize, from, interval, merge, mergeMap, of, retry, throwError } from 'rxjs';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
-import { IErrorEvent, IRequestEvent } from '../interfaces';
+import { ICheckEvent, IErrorEvent, IRequestEvent } from '../interfaces';
 import { TClientEvent } from '../types';
+import { echo } from './echo';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     mergeMap(
@@ -20,7 +21,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             version
                         });
                     });
-                const send = (event: TClientEvent) => webSocket.send(JSON.stringify(event));
+                const send = (event: ICheckEvent | TClientEvent) => webSocket.send(JSON.stringify(event));
                 const subscribeToCandidates = () =>
                     on(
                         peerConnection,
@@ -259,7 +260,18 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     defer(() => from(errorEvents)),
                     // tslint:disable-next-line:rxjs-throw-error
                     errorSubject.pipe(mergeMap((err) => throwError(() => err))),
-                    subject.pipe(finalize(() => errorSubject.complete()))
+                    subject.pipe(
+                        echo(
+                            () =>
+                                send({
+                                    client: { id: clientId },
+                                    type: 'check'
+                                }),
+                            () => dataChannel === null || dataChannel.readyState === 'connecting',
+                            interval(5000)
+                        ),
+                        finalize(() => errorSubject.complete())
+                    )
                 )
                     .pipe(
                         concatMap((event) => processEvent(event)),
