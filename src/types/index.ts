@@ -11,7 +11,6 @@ export * from './extended-timing-state-vector';
 export * from './native-event-target';
 export * from './ping-event';
 export * from './pong-event';
-export * from './request-event';
 export * from './timing-provider-constructor';
 export * from './timing-provider-constructor-factory';
 export * from './update-event';
