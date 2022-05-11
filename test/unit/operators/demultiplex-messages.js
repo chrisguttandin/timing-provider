@@ -57,7 +57,9 @@ describe('demultiplexMessages', () => {
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
+                subject.next(event);
                 subject.complete();
+
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
@@ -135,7 +137,9 @@ describe('demultiplexMessages', () => {
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
+                subject.next(event);
                 subject.complete();
+
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
@@ -213,7 +217,9 @@ describe('demultiplexMessages', () => {
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
+                subject.next(event);
                 subject.complete();
+
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
@@ -291,7 +297,9 @@ describe('demultiplexMessages', () => {
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
+                subject.next(event);
                 subject.complete();
+
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
