@@ -5,6 +5,7 @@ import {
     catchError,
     combineLatest,
     concat,
+    concatMap,
     connect,
     defer,
     distinctUntilChanged,
@@ -19,6 +20,7 @@ import {
     map,
     merge,
     mergeMap,
+    of,
     repeat,
     scan,
     startWith,
@@ -41,7 +43,6 @@ import {
     translateTimingStateVector
 } from 'timing-object';
 import { IInitEvent } from '../interfaces';
-import { consumeInitEvent } from '../operators/consume-init-event';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
 import { maintainArray } from '../operators/maintain-array';
@@ -260,10 +261,17 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         finalize(() => webSocket.close()),
                         map((event) => <TWebSocketEvent>JSON.parse(event.data)),
                         enforceOrder((event): event is IInitEvent => event.type === 'init'),
-                        consumeInitEvent(
-                            (event): event is IInitEvent => event.type === 'init',
-                            ({ origin }) => (this._origin = origin)
-                        ),
+                        concatMap((event) => {
+                            if (event.type === 'init') {
+                                const { events, origin } = event;
+
+                                this._origin = origin;
+
+                                return from(events);
+                            }
+
+                            return of(event);
+                        }),
                         demultiplexMessages(timer(10_000)),
                         negotiateDataChannels(
                             () =>
