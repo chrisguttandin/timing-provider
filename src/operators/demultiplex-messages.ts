@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, Subject, Subscription, last } from 'rxjs';
+import { Observable, OperatorFunction, Subject, Subscription, last, take } from 'rxjs';
 import { IRequestEvent, ITerminationEvent } from '../interfaces';
 import { TClientEvent } from '../types';
 
@@ -42,7 +42,7 @@ export const demultiplexMessages =
                             subject.complete();
                         }
 
-                        subjects.set(remoteClientId, [null, timer.subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
+                        subjects.set(remoteClientId, [null, timer.pipe(take(1)).subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
                     } else {
                         if (subject === null && subscription === null) {
                             const newSubject = new Subject<IRequestEvent | TClientEvent>();
