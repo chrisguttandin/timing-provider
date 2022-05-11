@@ -43,8 +43,10 @@ import {
     translateTimingStateVector
 } from 'timing-object';
 import { IInitEvent } from '../interfaces';
+import { convertToArray } from '../operators/convert-to-array';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
+import { filterUniqueValues } from '../operators/filter-unique-values';
 import { maintainArray } from '../operators/maintain-array';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
@@ -240,22 +242,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             const url = PROVIDER_ID_REGEX.test(this._providerIdOrUrl)
                 ? `${SUENC_URL}?providerId=${this._providerIdOrUrl}`
                 : this._providerIdOrUrl;
-            const subjectConfig = {
-                openObserver: {
-                    next: () => {
-                        if (this._readyState === 'connecting') {
-                            this._readyState = 'open';
-                            this.dispatchEvent(new Event('readystatechange'));
-                        }
-                    }
-                }
-            };
+
             this._subscription = concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => {
                     const webSocket = new WebSocket(url);
-
-                    webSocket.onopen = () => subjectConfig?.openObserver?.next();
 
                     return from(on(webSocket, 'message')).pipe(
                         finalize(() => webSocket.close()),
@@ -266,6 +257,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                 const { events, origin } = event;
 
                                 this._origin = origin;
+
+                                if (events.length === 0 && this._readyState === 'connecting') {
+                                    this._readyState = 'open';
+                                    this.dispatchEvent(new Event('readystatechange'));
+                                }
 
                                 return from(events);
                             }
@@ -294,6 +290,16 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                         return EMPTY;
                     }),
+                    convertToArray(),
+                    tap((tuples) => {
+                        if (tuples.length === 0 || tuples.some(([dataChannelSubject]) => dataChannelSubject !== null)) {
+                            if (this._readyState === 'connecting') {
+                                this._readyState = 'open';
+                                this.dispatchEvent(new Event('readystatechange'));
+                            }
+                        }
+                    }),
+                    filterUniqueValues(),
                     map(
                         ([dataChannel, isActive]) =>
                             [
