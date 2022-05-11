@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, Subject, Subscription, last, take } from 'rxjs';
+import { Observable, OperatorFunction, Subject, Subscription, finalize, last, take } from 'rxjs';
 import { IRequestEvent, ITerminationEvent } from '../interfaces';
 import { TClientEvent } from '../types';
 
@@ -20,13 +20,11 @@ export const demultiplexMessages =
                 });
             };
 
-            return source.subscribe({
+            return source.pipe(finalize(() => completeAll())).subscribe({
                 complete(): void {
-                    completeAll();
                     observer.complete();
                 },
                 error(err): void {
-                    completeAll();
                     observer.error(err);
                 },
                 next(event): void {

@@ -1,4 +1,4 @@
-import { Subject, mergeMap } from 'rxjs';
+import { EMPTY, NEVER, Subject, concat, from, interval, mergeMap, of, takeUntil } from 'rxjs';
 import { demultiplexMessages } from '../../../src/operators/demultiplex-messages';
 import { marbles } from 'rxjs-marbles';
 
@@ -75,6 +75,43 @@ describe('demultiplexMessages', () => {
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
+
+        it('should complete the subject when unsubscribing', (done) => {
+            concat(of(event), NEVER)
+                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .subscribe({
+                    next: ([, subject]) => {
+                        subject.subscribe({
+                            complete: done
+                        });
+                    }
+                });
+        });
+
+        describe('with a subsequent termination event', () => {
+            it('should complete the subject', (done) => {
+                concat(
+                    from([
+                        event,
+                        {
+                            client: {
+                                id: clientId
+                            },
+                            type: 'termination'
+                        }
+                    ]),
+                    NEVER
+                )
+                    .pipe(demultiplexMessages(EMPTY))
+                    .subscribe({
+                        next: ([, subject]) => {
+                            subject.subscribe({
+                                complete: done
+                            });
+                        }
+                    });
+            });
+        });
     });
 
     describe('with a single candidate event', () => {
@@ -116,6 +153,43 @@ describe('demultiplexMessages', () => {
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
+
+        it('should complete the subject when unsubscribing', (done) => {
+            concat(of(event), NEVER)
+                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .subscribe({
+                    next: ([, subject]) => {
+                        subject.subscribe({
+                            complete: done
+                        });
+                    }
+                });
+        });
+
+        describe('with a subsequent termination event', () => {
+            it('should complete the subject', (done) => {
+                concat(
+                    from([
+                        event,
+                        {
+                            client: {
+                                id: clientId
+                            },
+                            type: 'termination'
+                        }
+                    ]),
+                    NEVER
+                )
+                    .pipe(demultiplexMessages(EMPTY))
+                    .subscribe({
+                        next: ([, subject]) => {
+                            subject.subscribe({
+                                complete: done
+                            });
+                        }
+                    });
+            });
+        });
     });
 
     describe('with a single description event', () => {
@@ -157,6 +231,43 @@ describe('demultiplexMessages', () => {
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
+
+        it('should complete the subject when unsubscribing', (done) => {
+            concat(of(event), NEVER)
+                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .subscribe({
+                    next: ([, subject]) => {
+                        subject.subscribe({
+                            complete: done
+                        });
+                    }
+                });
+        });
+
+        describe('with a subsequent termination event', () => {
+            it('should complete the subject', (done) => {
+                concat(
+                    from([
+                        event,
+                        {
+                            client: {
+                                id: clientId
+                            },
+                            type: 'termination'
+                        }
+                    ]),
+                    NEVER
+                )
+                    .pipe(demultiplexMessages(EMPTY))
+                    .subscribe({
+                        next: ([, subject]) => {
+                            subject.subscribe({
+                                complete: done
+                            });
+                        }
+                    });
+            });
+        });
     });
 
     describe('with a single summary event', () => {
@@ -198,6 +309,43 @@ describe('demultiplexMessages', () => {
                 helpers.expect(destination).toBeObservable(expected);
             })
         );
+
+        it('should complete the subject when unsubscribing', (done) => {
+            concat(of(event), NEVER)
+                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .subscribe({
+                    next: ([, subject]) => {
+                        subject.subscribe({
+                            complete: done
+                        });
+                    }
+                });
+        });
+
+        describe('with a subsequent termination event', () => {
+            it('should complete the subject', (done) => {
+                concat(
+                    from([
+                        event,
+                        {
+                            client: {
+                                id: clientId
+                            },
+                            type: 'termination'
+                        }
+                    ]),
+                    NEVER
+                )
+                    .pipe(demultiplexMessages(EMPTY))
+                    .subscribe({
+                        next: ([, subject]) => {
+                            subject.subscribe({
+                                complete: done
+                            });
+                        }
+                    });
+            });
+        });
     });
 
     describe('with a single termination event', () => {
