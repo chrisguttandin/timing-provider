@@ -197,6 +197,10 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         return createAndSendOffer();
                     }
 
+                    if (type === 'notice' && label === null) {
+                        return Promise.resolve();
+                    }
+
                     if (type === 'offer' && label === null) {
                         if (version > event.version) {
                             return Promise.resolve();

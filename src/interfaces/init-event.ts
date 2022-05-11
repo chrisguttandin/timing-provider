@@ -1,7 +1,8 @@
-import { IRequestEvent } from "./request-event";
+import { INoticeEvent } from './notice-event';
+import { IRequestEvent } from './request-event';
 
 export interface IInitEvent {
-    events: IRequestEvent[];
+    events: (INoticeEvent | IRequestEvent)[];
 
     origin: number;
 
