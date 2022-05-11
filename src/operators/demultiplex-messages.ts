@@ -10,7 +10,7 @@ export const demultiplexMessages =
         new Observable<[string, Subject<IRequestEvent | TClientEvent>]>((observer) => {
             const subjects = new Map<string, [null | Subject<IRequestEvent | TClientEvent>, Subscription]>();
 
-            const clearAll = () => {
+            const completeAll = () => {
                 subjects.forEach(([subject, subscription]) => {
                     subscription.unsubscribe();
 
@@ -22,11 +22,11 @@ export const demultiplexMessages =
 
             return source.subscribe({
                 complete(): void {
-                    clearAll();
+                    completeAll();
                     observer.complete();
                 },
                 error(err): void {
-                    clearAll();
+                    completeAll();
                     observer.error(err);
                 },
                 next(event): void {
