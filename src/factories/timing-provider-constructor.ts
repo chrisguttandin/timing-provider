@@ -483,7 +483,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     const externalVector = { ...extendedVector, hops: [...extendedVector.hops, this._origin] };
 
                     activeDataChannelSubjects.forEach((activeUpdateSubject) => {
-                        if (extendedVector === latestExtendedVector && dataChannelSubject !== activeUpdateSubject) {
+                        if (extendedVector !== latestExtendedVector || dataChannelSubject !== activeUpdateSubject) {
                             activeUpdateSubject.send({ message: externalVector, type: 'update' });
                         }
                     });
