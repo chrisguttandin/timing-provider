@@ -41,7 +41,7 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
-import { IInitEvent } from '../interfaces';
+import { IClosureEvent, IInitEvent } from '../interfaces';
 import { convertToArray } from '../operators/convert-to-array';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
@@ -49,6 +49,7 @@ import { filterUniqueValues } from '../operators/filter-unique-values';
 import { maintainArray } from '../operators/maintain-array';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
+import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
 import {
     TDataChannelEvent,
     TExtendedTimingStateVector,
@@ -258,6 +259,16 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     ).pipe(
                         finalize(() => webSocket.close()),
                         map((event) => <TWebSocketEvent>JSON.parse(event.data)),
+                        takeUntilFatalValue(
+                            (event): event is IClosureEvent => event.type === 'closure',
+                            () => {
+                                const err = new Error('Your plan has exceeded its quota.');
+
+                                this._error = err;
+                                this._readyState = 'closed';
+                                this.dispatchEvent(new ErrorEvent('error', { error: err }));
+                            }
+                        ),
                         enforceOrder((event): event is IInitEvent => event.type === 'init'),
                         concatMap((event) => {
                             if (event.type === 'init') {
