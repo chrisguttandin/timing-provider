@@ -388,13 +388,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                         estimateOffset(dataChannelSubject)
                                     ]).pipe(
                                         catchError(() => EMPTY),
-                                        filter((value): value is [TUpdateEvent['message'], number] => value[0] !== null),
                                         distinctUntilChanged(
                                             ([vectorA, offsetA], [vectorB, offsetB]) => vectorA === vectorB && offsetA === offsetB
                                         ),
                                         map(
                                             ([vector, offset]) =>
-                                                [{ ...vector, timestamp: vector.timestamp - offset }, dataChannelSubject] as const
+                                                [
+                                                    vector === null ? vector : { ...vector, timestamp: vector.timestamp - offset },
+                                                    dataChannelSubject
+                                                ] as const
                                         ),
                                         endWith([null, dataChannelSubject] as const)
                                     )
