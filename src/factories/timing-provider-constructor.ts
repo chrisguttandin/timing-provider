@@ -21,11 +21,10 @@ import {
     merge,
     mergeMap,
     of,
-    repeat,
     scan,
     startWith,
-    takeUntil,
     tap,
+    throwError,
     timer,
     withLatestFrom
 } from 'rxjs';
@@ -248,7 +247,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                 defer(() => {
                     const webSocket = new WebSocket(url);
 
-                    return from(on(webSocket, 'message')).pipe(
+                    return merge(
+                        on(webSocket, 'message'),
+                        merge(on(webSocket, 'close'), on(webSocket, 'error')).pipe(
+                            mergeMap(({ type }) =>
+                                // tslint:disable-next-line:rxjs-throw-error
+                                throwError(() => new Error(`WebSocket fired unexpected event of type "${type}".`))
+                            )
+                        )
+                    ).pipe(
                         finalize(() => webSocket.close()),
                         map((event) => <TWebSocketEvent>JSON.parse(event.data)),
                         enforceOrder((event): event is IInitEvent => event.type === 'init'),
@@ -275,13 +282,11 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                     iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
                                 }),
                             webSocket
-                        ),
-                        takeUntil(merge(on(webSocket, 'close'), on(webSocket, 'error')))
+                        )
                     );
                 })
             )
                 .pipe(
-                    repeat(),
                     retryBackoff(),
                     catchError((err) => {
                         this._error = err;
