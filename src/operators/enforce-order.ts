@@ -1,12 +1,12 @@
 import { MonoTypeOperatorFunction, concatMap, from, scan } from 'rxjs';
 
 export const enforceOrder =
-    <FirstValue, SubsequentValues>(
-        isFirstValue: (value: FirstValue | SubsequentValues) => value is FirstValue
-    ): MonoTypeOperatorFunction<FirstValue | SubsequentValues> =>
+    <FirstValue, SubsequentValue>(
+        isFirstValue: (value: FirstValue | SubsequentValue) => value is FirstValue
+    ): MonoTypeOperatorFunction<FirstValue | SubsequentValue> =>
     (source) =>
         source.pipe(
-            scan<FirstValue | SubsequentValues, [(FirstValue | SubsequentValues)[], null | SubsequentValues[]]>(
+            scan<FirstValue | SubsequentValue, [(FirstValue | SubsequentValue)[], null | SubsequentValue[]]>(
                 ([values, bufferedValues], value) => {
                     if (isFirstValue(value)) {
                         if (bufferedValues === null) {
