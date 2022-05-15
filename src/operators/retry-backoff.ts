@@ -1,4 +1,4 @@
-import { MonoTypeOperatorFunction, defer, iif, retry, throwError, timer } from 'rxjs';
+import { MonoTypeOperatorFunction, defer, iif, retry, tap, throwError, timer } from 'rxjs';
 
 export const retryBackoff =
     <T>(): MonoTypeOperatorFunction<T> =>
@@ -20,6 +20,7 @@ export const retryBackoff =
                             throwError(() => error) // tslint:disable-line:rxjs-throw-error
                         );
                     }
-                })
+                }),
+                tap(() => (index = 0))
             );
         });
