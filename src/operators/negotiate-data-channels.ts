@@ -34,7 +34,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 type: 'summary',
                                 version
                             });
-                        } else {
+                        } else if (candidate.port !== 9 && candidate.protocol !== 'tcp') {
                             send({
                                 ...candidate.toJSON(),
                                 client: { id: clientId },
