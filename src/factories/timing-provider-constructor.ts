@@ -461,8 +461,10 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                                     if (index > -1) {
                                         if (dataChannelSubjectsAndExtendedVectors.length === 1) {
-                                            dataChannelSubjectsAndExtendedVectors.length = 0;
-                                            dataChannelSubjectsAndExtendedVectors.push([null, this._createExtendedVector([])]);
+                                            dataChannelSubjectsAndExtendedVectors[0][1] = {
+                                                ...dataChannelSubjectsAndExtendedVectors[0][1],
+                                                hops: []
+                                            };
                                         } else {
                                             dataChannelSubjectsAndExtendedVectors.splice(index, 1);
                                         }
