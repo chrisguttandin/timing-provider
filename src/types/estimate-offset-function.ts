@@ -1,5 +1,7 @@
 import { Observable } from 'rxjs';
-import { IRemoteSubject } from 'rxjs-broker';
-import { TDataChannelEvent } from './data-channel-event';
+import { TDataChannelEvent } from '../module';
 
-export type TEstimateOffsetFunction = (dataChannelSubject: IRemoteSubject<TDataChannelEvent>) => Observable<number>;
+export type TEstimateOffsetFunction = (
+    message$: Observable<TDataChannelEvent>,
+    send: (event: TDataChannelEvent) => void
+) => Observable<number>;

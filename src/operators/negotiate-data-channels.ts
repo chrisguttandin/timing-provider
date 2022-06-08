@@ -5,26 +5,31 @@ import {
     concatMap,
     count,
     defer,
+    filter,
     finalize,
     from,
+    iif,
     interval,
     map,
     merge,
     mergeMap,
     of,
     retry,
+    switchMap,
+    takeUntil,
     tap,
-    throwError
+    throwError,
+    timer
 } from 'rxjs';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
 import { ICheckEvent, IErrorEvent, IRequestEvent } from '../interfaces';
-import { TClientEvent } from '../types';
+import { TClientEvent, TDataChannelEvent, TDataChannelTuple } from '../types';
 import { echo } from './echo';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     map(
         ([clientId, subject]: [string, Observable<IRequestEvent | TClientEvent>]) =>
-            new Observable<[null | RTCDataChannel, boolean]>((observer) => {
+            new Observable<null | TDataChannelTuple>((observer) => {
                 const errorEvents: IErrorEvent[] = [];
                 const errorSubject = new Subject<Error>();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
@@ -132,7 +137,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     unsubscribeFromPeerConnection();
 
                     if (dataChannel?.readyState === 'open') {
-                        observer.next([null, label !== null]);
+                        observer.next(null);
                     }
 
                     dataChannel?.close();
@@ -292,7 +297,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     return throwError(() => unrecoverableError);
                 };
 
-                observer.next([null, label !== null]);
+                observer.next(null);
 
                 return merge(
                     defer(() => from(errorEvents)),

@@ -1,19 +1,19 @@
 import { Observable, OperatorFunction, from, mergeMap } from 'rxjs';
 
 export const filterUniqueValues =
-    <Rest extends any[], Value extends object>(): OperatorFunction<[null | Value, ...Rest][], [Value, ...Rest]> =>
+    <Value extends object>(): OperatorFunction<(null | Value)[], Value> =>
     (source) =>
         new Observable((observer) => {
-            const values = new WeakSet<Value>();
+            const emittedValues = new WeakSet<Value>();
 
             return source
                 .pipe(
-                    mergeMap((tuples) => {
-                        const newTuples = tuples.filter((tuple): tuple is [Value, ...Rest] => tuple[0] !== null && !values.has(tuple[0]));
+                    mergeMap((values) => {
+                        const newValues = values.filter((value): value is Value => value !== null && !emittedValues.has(value));
 
-                        newTuples.forEach(([value]) => values.add(value));
+                        newValues.forEach((value) => emittedValues.add(value));
 
-                        return from(newTuples);
+                        return from(newValues);
                     })
                 )
                 .subscribe(observer);

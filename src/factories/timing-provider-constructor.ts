@@ -28,7 +28,6 @@ import {
     timer,
     withLatestFrom
 } from 'rxjs';
-import { IRemoteSubject, wrap } from 'rxjs-broker';
 import { equals } from 'rxjs-etc/operators';
 import { on, online } from 'subscribable-things';
 import {
@@ -41,7 +40,7 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
-import { IClosureEvent, IInitEvent } from '../interfaces';
+import { IClosureEvent, IInitEvent, IUpdateEvent } from '../interfaces';
 import { convertToArray } from '../operators/convert-to-array';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
@@ -52,10 +51,10 @@ import { retryBackoff } from '../operators/retry-backoff';
 import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
 import {
     TDataChannelEvent,
+    TDataChannelTuple,
     TExtendedTimingStateVector,
     TTimingProviderConstructor,
     TTimingProviderConstructorFactory,
-    TUpdateEvent,
     TWebSocketEvent
 } from '../types';
 
@@ -93,7 +92,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
         private _subscription: null | Subscription;
 
-        private _updateRequestsSubject: Subject<readonly [null | TExtendedTimingStateVector, null | IRemoteSubject<TDataChannelEvent>]>;
+        private _updateRequestsSubject: Subject<readonly [null | TExtendedTimingStateVector, null]>;
 
         private _vector: ITimingStateVector;
 
@@ -308,7 +307,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     }),
                     convertToArray(),
                     tap((tuples) => {
-                        if (tuples.length === 0 || tuples.some(([dataChannelSubject]) => dataChannelSubject !== null)) {
+                        if (tuples.length === 0 || tuples.some((tuple) => tuple !== null)) {
                             if (this._readyState === 'connecting') {
                                 this._readyState = 'open';
                                 this.dispatchEvent(new Event('readystatechange'));
@@ -316,25 +315,15 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         }
                     }),
                     filterUniqueValues(),
-                    map(
-                        ([dataChannel, isActive]) =>
-                            [
-                                wrap<TDataChannelEvent>(dataChannel, {
-                                    deserializer: (event) => ({ ...JSON.parse(event.data), timestamp: event.timeStamp })
-                                }),
-                                isActive
-                            ] as const
-                    ),
-                    connect((dataChannelSubjects) => {
-                        const currentlyActiveDataChannelSubjects = dataChannelSubjects.pipe(
-                            map(([dataChannelSubject]) => <[IRemoteSubject<TDataChannelEvent>, boolean]>[dataChannelSubject, true]),
-                            expand(([dataChannelSubject, isExpandable]) =>
+                    connect((dataChannelTuples) => {
+                        const currentlyActiveDataChannels = dataChannelTuples.pipe(
+                            map((dataChannelTuple) => <[TDataChannelTuple, boolean]>[dataChannelTuple, true]),
+                            expand(([dataChannelTuple, isExpandable]) =>
                                 iif(
                                     () => isExpandable,
-                                    dataChannelSubject.pipe(
-                                        catchError(() => EMPTY),
+                                    dataChannelTuple[1].pipe(
                                         ignoreElements(),
-                                        endWith<[IRemoteSubject<TDataChannelEvent>, boolean]>([dataChannelSubject, false])
+                                        endWith(<[TDataChannelTuple, boolean]>[dataChannelTuple, false])
                                     ),
                                     EMPTY
                                 )
@@ -344,50 +333,52 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                         );
 
                         return merge(
-                            dataChannelSubjects.pipe(
-                                tap(([dataChannelSubject, isActive]) => {
+                            dataChannelTuples.pipe(
+                                tap(([isActive, , send]) => {
                                     if (isActive) {
-                                        this._sendUpdate(dataChannelSubject);
+                                        this._sendUpdate(send);
                                     }
                                 }),
-                                mergeMap(([dataChannelSubject]) =>
-                                    combineLatest([
-                                        dataChannelSubject.pipe(
-                                            filter((event): event is TUpdateEvent => event.type === 'update'),
-                                            map(({ message }) => message),
-                                            map((extendedVector) => {
-                                                if (this._version > extendedVector.version) {
-                                                    this._sendUpdate(dataChannelSubject);
+                                mergeMap((dataChannelTuple) =>
+                                    dataChannelTuple[1].pipe(
+                                        connect((message$) =>
+                                            combineLatest([
+                                                message$.pipe(
+                                                    filter((event): event is IUpdateEvent => event.type === 'update'),
+                                                    map(({ message }) => message),
+                                                    map((extendedVector) => {
+                                                        if (this._version > extendedVector.version) {
+                                                            this._sendUpdate(dataChannelTuple[2]);
 
-                                                    return null;
-                                                }
+                                                            return null;
+                                                        }
 
-                                                if (this._version === extendedVector.version) {
-                                                    const origin = this._hops.length === 0 ? this._origin : this._hops[0];
+                                                        if (this._version === extendedVector.version) {
+                                                            const origin = this._hops.length === 0 ? this._origin : this._hops[0];
 
-                                                    if (origin < extendedVector.hops[0]) {
-                                                        this._sendUpdate(dataChannelSubject);
+                                                            if (origin < extendedVector.hops[0]) {
+                                                                this._sendUpdate(dataChannelTuple[2]);
 
-                                                        return null;
-                                                    }
+                                                                return null;
+                                                            }
 
-                                                    if (
-                                                        origin === extendedVector.hops[0] &&
-                                                        this._hops.length + 1 < extendedVector.hops.length
-                                                    ) {
-                                                        this._sendUpdate(dataChannelSubject);
+                                                            if (
+                                                                origin === extendedVector.hops[0] &&
+                                                                this._hops.length + 1 < extendedVector.hops.length
+                                                            ) {
+                                                                this._sendUpdate(dataChannelTuple[2]);
 
-                                                        return null;
-                                                    }
-                                                }
+                                                                return null;
+                                                            }
+                                                        }
 
-                                                return extendedVector;
-                                            }),
-                                            startWith(null)
+                                                        return extendedVector;
+                                                    }),
+                                                    startWith(null)
+                                                ),
+                                                estimateOffset(message$, dataChannelTuple[2])
+                                            ])
                                         ),
-                                        estimateOffset(dataChannelSubject)
-                                    ]).pipe(
-                                        catchError(() => EMPTY),
                                         distinctUntilChanged(
                                             ([vectorA, offsetA], [vectorB, offsetB]) => vectorA === vectorB && offsetA === offsetB
                                         ),
@@ -395,20 +386,20 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                             ([vector, offset]) =>
                                                 [
                                                     vector === null ? vector : { ...vector, timestamp: vector.timestamp - offset },
-                                                    dataChannelSubject
+                                                    dataChannelTuple[2]
                                                 ] as const
                                         ),
-                                        endWith([null, dataChannelSubject] as const)
+                                        endWith([null, dataChannelTuple[2]] as const)
                                     )
                                 )
                             ),
                             this._updateRequestsSubject
                         ).pipe(
                             scan<
-                                readonly [null | TExtendedTimingStateVector, null | IRemoteSubject<TDataChannelEvent>],
+                                readonly [null | TExtendedTimingStateVector, null | ((event: TDataChannelEvent) => void)],
                                 [
                                     null | TExtendedTimingStateVector,
-                                    [null | IRemoteSubject<TDataChannelEvent>, TExtendedTimingStateVector][]
+                                    [null | ((event: TDataChannelEvent) => void), TExtendedTimingStateVector][]
                                 ],
                                 undefined
                             >(
@@ -479,16 +470,16 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                     [latestExtendedVector, dataChannelSubjectAndExtendedVector] as const
                             ),
                             distinctUntilChanged(([, [, extendedVectorA]], [, [, extendedVectorB]]) => extendedVectorA === extendedVectorB),
-                            withLatestFrom(currentlyActiveDataChannelSubjects)
+                            withLatestFrom(currentlyActiveDataChannels)
                         );
                     })
                 )
                 .subscribe(([[latestExtendedVector, [dataChannelSubject, extendedVector]], activeDataChannelSubjects]) => {
                     const externalVector = { ...extendedVector, hops: [...extendedVector.hops, this._origin] };
 
-                    activeDataChannelSubjects.forEach((activeUpdateSubject) => {
-                        if (extendedVector !== latestExtendedVector || dataChannelSubject !== activeUpdateSubject) {
-                            activeUpdateSubject.send({ message: externalVector, type: 'update' });
+                    activeDataChannelSubjects.forEach(([, , send]) => {
+                        if (extendedVector !== latestExtendedVector || dataChannelSubject !== send) {
+                            send({ message: externalVector, type: 'update' });
                         }
                     });
 
@@ -500,8 +491,8 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             return { ...this._vector, hops, version: this._version };
         }
 
-        private _sendUpdate(dataChannelSubject: IRemoteSubject<TDataChannelEvent>): void {
-            dataChannelSubject.send({
+        private _sendUpdate(send: (event: TDataChannelEvent) => void): void {
+            send({
                 message: this._createExtendedVector([...this._hops, this._origin]),
                 type: 'update'
             });
