@@ -89,7 +89,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     const unsubscribeFunctions = [
                         on(
                             peerConnection,
-                            'connectionState'
+                            'connectionstatechange'
                         )(() => {
                             const connectionState = peerConnection.connectionState;
 
