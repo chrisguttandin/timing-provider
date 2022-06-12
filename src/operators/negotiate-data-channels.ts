@@ -26,6 +26,7 @@ import { TUnsubscribeFunction, on } from 'subscribable-things';
 import { ICheckEvent, IErrorEvent, IRequestEvent } from '../interfaces';
 import { TClientEvent, TDataChannelEvent, TDataChannelTuple } from '../types';
 import { echo } from './echo';
+import { ignoreLateResult } from './ignore-late-result';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
     map(
@@ -35,9 +36,9 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 const errorSubject = new Subject<Error>();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
                 const createAndSendOffer = () =>
-                    from(peerConnection.createOffer()).pipe(
+                    ignoreLateResult(peerConnection.createOffer()).pipe(
                         mergeMap((offer) =>
-                            from(peerConnection.setLocalDescription(offer)).pipe(
+                            ignoreLateResult(peerConnection.setLocalDescription(offer)).pipe(
                                 tap(() =>
                                     send({
                                         ...jsonifyDescription(offer),
@@ -188,11 +189,13 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         }
 
                         if (version === event.version) {
-                            return from(peerConnection.setRemoteDescription(event)).pipe(
+                            return ignoreLateResult(peerConnection.setRemoteDescription(event)).pipe(
                                 mergeMap(() => from(receivedCandidates)),
-                                concatMap((receivedCandidate) => peerConnection.addIceCandidate(receivedCandidate)),
+                                concatMap((receivedCandidate) => ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))),
                                 count(),
-                                mergeMap((numberOfNewlyAppliedCandidates) => addFinalCandidate(numberOfNewlyAppliedCandidates))
+                                mergeMap((numberOfNewlyAppliedCandidates) =>
+                                    ignoreLateResult(addFinalCandidate(numberOfNewlyAppliedCandidates))
+                                )
                             );
                         }
                     }
@@ -213,7 +216,9 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 return EMPTY;
                             }
 
-                            return from(peerConnection.addIceCandidate(event)).pipe(mergeMap(() => addFinalCandidate(1)));
+                            return ignoreLateResult(peerConnection.addIceCandidate(event)).pipe(
+                                mergeMap(() => ignoreLateResult(addFinalCandidate(1)))
+                            );
                         }
                     }
 
@@ -243,10 +248,10 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             resetState(event.version);
                         }
 
-                        return from(peerConnection.setRemoteDescription(event)).pipe(
-                            mergeMap(() => peerConnection.createAnswer()),
+                        return ignoreLateResult(peerConnection.setRemoteDescription(event)).pipe(
+                            mergeMap(() => ignoreLateResult(peerConnection.createAnswer())),
                             mergeMap((answer) =>
-                                from(peerConnection.setLocalDescription(answer)).pipe(
+                                ignoreLateResult(peerConnection.setLocalDescription(answer)).pipe(
                                     tap(() =>
                                         send({
                                             ...jsonifyDescription(answer),
@@ -257,9 +262,11 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 )
                             ),
                             mergeMap(() => from(receivedCandidates)),
-                            concatMap((receivedCandidate) => peerConnection.addIceCandidate(receivedCandidate)),
+                            concatMap((receivedCandidate) => ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))),
                             count(),
-                            mergeMap((numberOfNewlyAppliedCandidates) => addFinalCandidate(numberOfNewlyAppliedCandidates))
+                            mergeMap((numberOfNewlyAppliedCandidates) =>
+                                ignoreLateResult(addFinalCandidate(numberOfNewlyAppliedCandidates))
+                            )
                         );
                     }
 
@@ -288,7 +295,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         if (version === event.version) {
                             numberOfExpectedCandidates = event.numberOfGatheredCandidates;
 
-                            return from(addFinalCandidate(0));
+                            return ignoreLateResult(addFinalCandidate(0));
                         }
                     }
 
