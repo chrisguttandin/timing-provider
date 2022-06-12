@@ -21,6 +21,7 @@ import {
     throwError,
     timer
 } from 'rxjs';
+import { inexorably } from 'rxjs-etc/operators';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
 import { ICheckEvent, IErrorEvent, IRequestEvent } from '../interfaces';
 import { TClientEvent, TDataChannelEvent, TDataChannelTuple } from '../types';
@@ -313,7 +314,11 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             () => dataChannel === null || dataChannel.readyState === 'connecting',
                             interval(5000)
                         ),
-                        finalize(() => errorSubject.complete())
+                        inexorably((notification) => {
+                            if (notification !== undefined) {
+                                errorSubject.complete();
+                            }
+                        })
                     )
                 )
                     .pipe(
