@@ -5,21 +5,17 @@ import {
     concatMap,
     count,
     defer,
-    filter,
     finalize,
     from,
-    iif,
     interval,
     map,
     merge,
     mergeMap,
     of,
     retry,
-    switchMap,
     takeUntil,
     tap,
-    throwError,
-    timer
+    throwError
 } from 'rxjs';
 import { inexorably } from 'rxjs-etc/operators';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
