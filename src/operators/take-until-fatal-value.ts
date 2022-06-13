@@ -7,5 +7,5 @@ export const takeUntilFatalValue = <OtherValue, FatalValue extends OtherValue>(
     connect((values$) => {
         const [fatalEvent$, otherEvent$] = partition(values$, isFatalValue);
 
-        return otherEvent$.pipe(takeUntil(fatalEvent$.pipe(tap(<any>handleFatalValue))));
+        return otherEvent$.pipe(takeUntil(fatalEvent$.pipe(tap(handleFatalValue))));
     });
