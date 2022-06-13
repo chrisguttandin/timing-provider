@@ -76,6 +76,10 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 const subscribeToDataChannel = (channel: RTCDataChannel) => {
                     const unsubscribeFunctions = [
                         on(channel, 'close')(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "close".'))),
+                        on(
+                            channel,
+                            'closing'
+                        )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "closing".'))),
                         on(channel, 'error')(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "error".')))
                     ];
                     const channelTuple = <const>[
