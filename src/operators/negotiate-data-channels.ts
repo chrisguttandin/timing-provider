@@ -88,7 +88,11 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             map((event) => <TDataChannelEvent>JSON.parse(event.data)),
                             takeUntil(merge(on(channel, 'close'), on(channel, 'closing'), on(channel, 'error')))
                         ),
-                        (event: TDataChannelEvent) => channel.send(JSON.stringify(event))
+                        (event: TDataChannelEvent) => {
+                            if (channel.readyState === 'open') {
+                                channel.send(JSON.stringify(event));
+                            }
+                        }
                     ];
 
                     if (channel.readyState === 'open') {
