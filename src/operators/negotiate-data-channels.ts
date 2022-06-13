@@ -78,11 +78,19 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         on(channel, 'close')(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "close".'))),
                         on(channel, 'error')(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "error".')))
                     ];
+                    const channelTuple = <const>[
+                        label !== null,
+                        from(on(channel, 'message')).pipe(
+                            map((event) => <TDataChannelEvent>JSON.parse(event.data)),
+                            takeUntil(merge(on(channel, 'close'), on(channel, 'closing'), on(channel, 'error')))
+                        ),
+                        (event: TDataChannelEvent) => channel.send(JSON.stringify(event))
+                    ];
 
                     if (channel.readyState === 'open') {
-                        observer.next([channel, label !== null]);
+                        observer.next(channelTuple);
                     } else {
-                        unsubscribeFunctions.push(on(channel, 'open')(() => observer.next([channel, label !== null])));
+                        unsubscribeFunctions.push(on(channel, 'open')(() => observer.next(channelTuple)));
                     }
 
                     return () => unsubscribeFunctions.forEach((unsubscribeFunction) => unsubscribeFunction());

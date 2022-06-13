@@ -3,7 +3,6 @@ import {
     Subject,
     Subscription,
     catchError,
-    combineLatest,
     concat,
     concatMap,
     connect,
@@ -11,12 +10,12 @@ import {
     distinctUntilChanged,
     endWith,
     expand,
-    filter,
     finalize,
     first,
     from,
     ignoreElements,
     iif,
+    interval,
     map,
     merge,
     mergeMap,
@@ -26,7 +25,8 @@ import {
     tap,
     throwError,
     timer,
-    withLatestFrom
+    withLatestFrom,
+    zip
 } from 'rxjs';
 import { equals } from 'rxjs-etc/operators';
 import { on, online } from 'subscribable-things';
@@ -40,11 +40,14 @@ import {
     filterTimingStateVectorUpdate,
     translateTimingStateVector
 } from 'timing-object';
-import { IClosureEvent, IInitEvent, IUpdateEvent } from '../interfaces';
+import { IClosureEvent, IInitEvent } from '../interfaces';
+import { combineAsTuple } from '../operators/combine-as-tuple';
+import { computeOffset } from '../operators/compute-offset';
 import { convertToArray } from '../operators/convert-to-array';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
 import { filterUniqueValues } from '../operators/filter-unique-values';
+import { groupByProperty } from '../operators/group-by-property';
 import { maintainArray } from '../operators/maintain-array';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
@@ -62,7 +65,6 @@ const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
 
 export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
-    estimateOffset,
     eventTargetConstructor,
     performance,
     setTimeout
@@ -339,46 +341,84 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                         this._sendUpdate(send);
                                     }
                                 }),
-                                mergeMap((dataChannelTuple) =>
-                                    dataChannelTuple[1].pipe(
-                                        connect((message$) =>
-                                            combineLatest([
-                                                message$.pipe(
-                                                    filter((event): event is IUpdateEvent => event.type === 'update'),
-                                                    map(({ message }) => message),
-                                                    map((extendedVector) => {
-                                                        if (this._version > extendedVector.version) {
-                                                            this._sendUpdate(dataChannelTuple[2]);
+                                mergeMap(([, message$, send]) => {
+                                    send({ type: 'ping' });
+
+                                    const now = performance.now();
+
+                                    return message$.pipe(
+                                        groupByProperty('type'),
+                                        mergeMap((group$) => {
+                                            if (group$.key === 'ping') {
+                                                return group$.pipe(
+                                                    map(({ timestamp }) => timestamp ?? performance.now()),
+                                                    tap((eventTime) => send({ message: [eventTime, performance.now()], type: 'pong' })),
+                                                    ignoreElements()
+                                                );
+                                            }
+
+                                            if (group$.key === 'pong') {
+                                                return zip(
+                                                    interval(1000).pipe(
+                                                        tap(() => send({ type: 'ping' })),
+                                                        map(() => performance.now()),
+                                                        startWith(now)
+                                                    ),
+                                                    group$.pipe(
+                                                        map(
+                                                            ({ message, timestamp }) =>
+                                                                [...message, timestamp ?? performance.now()] as const
+                                                        )
+                                                    )
+                                                ).pipe(
+                                                    computeOffset(),
+                                                    scan<number, number[]>(
+                                                        (latestValues, newValue) => [...latestValues.slice(-4), newValue],
+                                                        []
+                                                    ),
+                                                    map(
+                                                        (values) =>
+                                                            values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length
+                                                    ),
+                                                    map((offset) => offset / 1000),
+                                                    map((offset) => [1, offset] as const)
+                                                );
+                                            }
+
+                                            return group$.pipe(
+                                                map(({ message }) => message),
+                                                map((extendedVector) => {
+                                                    if (this._version > extendedVector.version) {
+                                                        this._sendUpdate(send);
+
+                                                        return null;
+                                                    }
+
+                                                    if (this._version === extendedVector.version) {
+                                                        const origin = this._hops.length === 0 ? this._origin : this._hops[0];
+
+                                                        if (origin < extendedVector.hops[0]) {
+                                                            this._sendUpdate(send);
 
                                                             return null;
                                                         }
 
-                                                        if (this._version === extendedVector.version) {
-                                                            const origin = this._hops.length === 0 ? this._origin : this._hops[0];
+                                                        if (
+                                                            origin === extendedVector.hops[0] &&
+                                                            this._hops.length + 1 < extendedVector.hops.length
+                                                        ) {
+                                                            this._sendUpdate(send);
 
-                                                            if (origin < extendedVector.hops[0]) {
-                                                                this._sendUpdate(dataChannelTuple[2]);
-
-                                                                return null;
-                                                            }
-
-                                                            if (
-                                                                origin === extendedVector.hops[0] &&
-                                                                this._hops.length + 1 < extendedVector.hops.length
-                                                            ) {
-                                                                this._sendUpdate(dataChannelTuple[2]);
-
-                                                                return null;
-                                                            }
+                                                            return null;
                                                         }
+                                                    }
 
-                                                        return extendedVector;
-                                                    }),
-                                                    startWith(null)
-                                                ),
-                                                estimateOffset(message$, dataChannelTuple[2])
-                                            ])
-                                        ),
+                                                    return extendedVector;
+                                                }),
+                                                map((extendedVector) => [0, extendedVector] as const)
+                                            );
+                                        }),
+                                        combineAsTuple<null | TExtendedTimingStateVector, number>([null, 0]),
                                         distinctUntilChanged(
                                             ([vectorA, offsetA], [vectorB, offsetB]) => vectorA === vectorB && offsetA === offsetB
                                         ),
@@ -386,12 +426,12 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                             ([vector, offset]) =>
                                                 [
                                                     vector === null ? vector : { ...vector, timestamp: vector.timestamp - offset },
-                                                    dataChannelTuple[2]
+                                                    send
                                                 ] as const
                                         ),
-                                        endWith([null, dataChannelTuple[2]] as const)
-                                    )
-                                )
+                                        endWith([null, send] as const)
+                                    );
+                                })
                             ),
                             this._updateRequestsSubject
                         ).pipe(
