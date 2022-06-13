@@ -363,7 +363,6 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
 
                                 if (label === null) {
                                     send(errorEvent);
-
                                     resetState(version + 1);
                                 } else {
                                     errorEvents.push(errorEvent);
