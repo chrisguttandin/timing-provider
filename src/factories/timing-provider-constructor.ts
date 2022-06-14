@@ -267,7 +267,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
 
                                 this._error = err;
                                 this._readyState = 'closed';
-                                this.dispatchEvent(new ErrorEvent('error', { error: err }));
+                                this.dispatchEvent(new Event('readystatechange'));
                             }
                         ),
                         enforceOrder((event): event is IInitEvent => event.type === 'init'),
@@ -303,7 +303,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                     catchError((err) => {
                         this._error = err;
                         this._readyState = 'closed';
-                        this.dispatchEvent(new ErrorEvent('error', { error: err }));
+                        this.dispatchEvent(new Event('readystatechange'));
 
                         return EMPTY;
                     }),
