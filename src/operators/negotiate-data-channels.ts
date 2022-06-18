@@ -24,7 +24,10 @@ import { TDataChannelEvent, TDataChannelTuple, TIncomingNegotiationEvent, TOutgo
 import { echo } from './echo';
 import { ignoreLateResult } from './ignore-late-result';
 
-export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, send: (event: TOutgoingSignalingEvent) => void) =>
+export const negotiateDataChannels = (
+    createPeerConnection: () => RTCPeerConnection,
+    sendSignalingEvent: (event: TOutgoingSignalingEvent) => void
+) =>
     map(
         ([clientId, subject]: [string, Observable<TIncomingNegotiationEvent>]) =>
             new Observable<null | TDataChannelTuple>((observer) => {
@@ -36,7 +39,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         mergeMap((offer) =>
                             ignoreLateResult(peerConnection.setLocalDescription(offer)).pipe(
                                 tap(() =>
-                                    send({
+                                    sendSignalingEvent({
                                         ...jsonifyDescription(offer),
                                         client: { id: clientId },
                                         version
@@ -51,14 +54,14 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                         'icecandidate'
                     )(({ candidate }) => {
                         if (candidate === null) {
-                            send({
+                            sendSignalingEvent({
                                 client: { id: clientId },
                                 numberOfGatheredCandidates,
                                 type: 'summary',
                                 version
                             });
                         } else if (candidate.port !== 9 && candidate.protocol !== 'tcp') {
-                            send({
+                            sendSignalingEvent({
                                 ...candidate.toJSON(),
                                 client: { id: clientId },
                                 type: 'candidate',
@@ -264,7 +267,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             mergeMap((answer) =>
                                 ignoreLateResult(peerConnection.setLocalDescription(answer)).pipe(
                                     tap(() =>
-                                        send({
+                                        sendSignalingEvent({
                                             ...jsonifyDescription(answer),
                                             client: { id: clientId },
                                             version
@@ -325,7 +328,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                     subject.pipe(
                         echo(
                             () =>
-                                send({
+                                sendSignalingEvent({
                                     client: { id: clientId },
                                     type: 'check'
                                 }),
@@ -357,7 +360,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                                 };
 
                                 if (label === null) {
-                                    send(errorEvent);
+                                    sendSignalingEvent(errorEvent);
                                     resetState(version + 1);
                                 } else {
                                     errorEvents.push(errorEvent);

@@ -6,7 +6,7 @@ export const createSignalingFactory =
     (createWebSocket: (url: string) => WebSocket) =>
     (url: string): readonly [Observable<TIncomingSignalingEvent>, (event: TOutgoingSignalingEvent) => void] => {
         const webSocket = createWebSocket(url);
-        const message$ = merge(
+        const signalingEvent$ = merge(
             on(webSocket, 'message'),
             merge(on(webSocket, 'close'), on(webSocket, 'error')).pipe(
                 mergeMap(({ type }) =>
@@ -18,7 +18,7 @@ export const createSignalingFactory =
             finalize(() => webSocket.close()),
             map((event) => <TIncomingSignalingEvent>JSON.parse(event.data))
         );
-        const send = (event: TOutgoingSignalingEvent) => webSocket.send(JSON.stringify(event));
+        const sendSignalingEvent = (event: TOutgoingSignalingEvent) => webSocket.send(JSON.stringify(event));
 
-        return [message$, send] as const;
+        return [signalingEvent$, sendSignalingEvent] as const;
     };

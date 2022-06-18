@@ -245,9 +245,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._subscription = concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => {
-                    const [message$, send] = createSignaling(url);
+                    const [signalingEvent$, sendSignalingEvent] = createSignaling(url);
 
-                    return message$.pipe(
+                    return signalingEvent$.pipe(
                         takeUntilFatalValue(
                             (event): event is IClosureEvent => event.type === 'closure',
                             () => {
@@ -281,7 +281,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                 new RTCPeerConnection({
                                     iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
                                 }),
-                            send
+                            sendSignalingEvent
                         )
                     );
                 })
