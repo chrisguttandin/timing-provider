@@ -10,7 +10,6 @@ import {
     distinctUntilChanged,
     endWith,
     expand,
-    finalize,
     first,
     from,
     ignoreElements,
@@ -23,13 +22,12 @@ import {
     scan,
     startWith,
     tap,
-    throwError,
     timer,
     withLatestFrom,
     zip
 } from 'rxjs';
 import { equals } from 'rxjs-etc/operators';
-import { on, online } from 'subscribable-things';
+import { online } from 'subscribable-things';
 import {
     ITimingProvider,
     ITimingProviderEventMap,
@@ -57,14 +55,14 @@ import {
     TDataChannelTuple,
     TExtendedTimingStateVector,
     TTimingProviderConstructor,
-    TTimingProviderConstructorFactory,
-    TWebSocketEvent
+    TTimingProviderConstructorFactory
 } from '../types';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
 
 export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
+    createSignaling,
     eventTargetConstructor,
     performance,
     setTimeout
@@ -247,19 +245,9 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
             this._subscription = concat(
                 from(online()).pipe(equals(true), first(), ignoreElements()),
                 defer(() => {
-                    const webSocket = new WebSocket(url);
+                    const [message$, send] = createSignaling(url);
 
-                    return merge(
-                        on(webSocket, 'message'),
-                        merge(on(webSocket, 'close'), on(webSocket, 'error')).pipe(
-                            mergeMap(({ type }) =>
-                                // tslint:disable-next-line:rxjs-throw-error
-                                throwError(() => new Error(`WebSocket fired unexpected event of type "${type}".`))
-                            )
-                        )
-                    ).pipe(
-                        finalize(() => webSocket.close()),
-                        map((event) => <TWebSocketEvent>JSON.parse(event.data)),
+                    return message$.pipe(
                         takeUntilFatalValue(
                             (event): event is IClosureEvent => event.type === 'closure',
                             () => {
@@ -293,7 +281,7 @@ export const createTimingProviderConstructor: TTimingProviderConstructorFactory 
                                 new RTCPeerConnection({
                                     iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
                                 }),
-                            webSocket
+                            send
                         )
                     );
                 })

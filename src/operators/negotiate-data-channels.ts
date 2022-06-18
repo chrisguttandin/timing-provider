@@ -24,7 +24,7 @@ import { TClientEvent, TDataChannelEvent, TDataChannelTuple } from '../types';
 import { echo } from './echo';
 import { ignoreLateResult } from './ignore-late-result';
 
-export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, webSocket: WebSocket) =>
+export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, send: (event: ICheckEvent | TClientEvent) => void) =>
     map(
         ([clientId, subject]: [string, Observable<IRequestEvent | TClientEvent>]) =>
             new Observable<null | TDataChannelTuple>((observer) => {
@@ -45,7 +45,6 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                             )
                         )
                     );
-                const send = (event: ICheckEvent | TClientEvent) => webSocket.send(JSON.stringify(event));
                 const subscribeToCandidates = () =>
                     on(
                         peerConnection,
