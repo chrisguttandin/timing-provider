@@ -1,7 +1,12 @@
+import type { wrapEventListener as wrapEventListenerFunction } from '../functions/wrap-event-listener';
 import { IEventTarget } from '../interfaces';
-import { TEventHandler, TEventTargetConstructorFactory, TNativeEventTarget } from '../types';
+import { TEventHandler, TEventTargetConstructor, TNativeEventTarget } from '../types';
+import type { createEventTargetFactory } from './event-target-factory';
 
-export const createEventTargetConstructor: TEventTargetConstructorFactory = (createEventTarget, wrapEventListener) => {
+export const createEventTargetConstructor = (
+    createEventTarget: ReturnType<typeof createEventTargetFactory>,
+    wrapEventListener: typeof wrapEventListenerFunction
+): TEventTargetConstructor => {
     return class EventTarget<EventMap extends Record<string, Event>> implements IEventTarget<EventMap> {
         private _listeners: WeakMap<EventListenerOrEventListenerObject, EventListenerOrEventListenerObject>;
 

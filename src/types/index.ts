@@ -2,7 +2,6 @@ export * from './data-channel-event';
 export * from './data-channel-tuple';
 export * from './event-handler';
 export * from './event-target-constructor';
-export * from './event-target-constructor-factory';
 export * from './extended-timing-state-vector';
 export * from './grouped-observable';
 export * from './incoming-negotiation-event';
