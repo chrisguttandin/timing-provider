@@ -13,5 +13,4 @@ export * from './native-event-target';
 export * from './outgoing-signaling-event';
 export * from './timing-provider-constructor';
 export * from './timing-provider-constructor-factory';
-export * from './wait-for-event-function';
 export * from './wrap-event-listener-function';
