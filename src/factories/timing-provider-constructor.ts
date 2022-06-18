@@ -53,19 +53,20 @@ import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
 import {
     TDataChannelEvent,
     TDataChannelTuple,
+    TEventTargetConstructor,
     TExtendedTimingStateVector,
-    TTimingProviderConstructor,
-    TTimingProviderConstructorFactory
+    TTimingProviderConstructor
 } from '../types';
+import type { createSignalingFactory } from './signaling-factory';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
 
-export const createTimingProviderConstructor: TTimingProviderConstructorFactory = (
-    createSignaling,
-    eventTargetConstructor,
-    performance,
-    setTimeout
+export const createTimingProviderConstructor = (
+    createSignaling: ReturnType<typeof createSignalingFactory>,
+    eventTargetConstructor: TEventTargetConstructor,
+    performance: Window['performance'],
+    setTimeout: Window['setTimeout']
 ): TTimingProviderConstructor => {
     return class TimingProvider extends eventTargetConstructor<ITimingProviderEventMap> implements ITimingProvider {
         private _endPosition: number;
