@@ -1,6 +1,4 @@
-import { TWrapEventListenerFunction } from '../types';
-
-export const wrapEventListener: TWrapEventListenerFunction = (target, eventListener) => {
+export const wrapEventListener = <T>(target: T, eventListener: EventListenerOrEventListenerObject): EventListener => {
     return (event) => {
         const descriptor = { value: target };
 
