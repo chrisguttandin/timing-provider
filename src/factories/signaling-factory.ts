@@ -1,11 +1,10 @@
 import { Observable, finalize, map, merge, mergeMap, throwError } from 'rxjs';
 import { on } from 'subscribable-things';
-import { ICheckEvent } from '../interfaces';
-import { TClientEvent, TWebSocketEvent } from '../types';
+import { TIncomingSignalingEvent, TOutgoingSignalingEvent } from '../types';
 
 export const createSignalingFactory =
     (createWebSocket: (url: string) => WebSocket) =>
-    (url: string): readonly [Observable<TWebSocketEvent>, (event: ICheckEvent | TClientEvent) => void] => {
+    (url: string): readonly [Observable<TIncomingSignalingEvent>, (event: TOutgoingSignalingEvent) => void] => {
         const webSocket = createWebSocket(url);
         const message$ = merge(
             on(webSocket, 'message'),
@@ -17,9 +16,9 @@ export const createSignalingFactory =
             )
         ).pipe(
             finalize(() => webSocket.close()),
-            map((event) => <TWebSocketEvent>JSON.parse(event.data))
+            map((event) => <TIncomingSignalingEvent>JSON.parse(event.data))
         );
-        const send = (event: ICheckEvent | TClientEvent) => webSocket.send(JSON.stringify(event));
+        const send = (event: TOutgoingSignalingEvent) => webSocket.send(JSON.stringify(event));
 
         return [message$, send] as const;
     };

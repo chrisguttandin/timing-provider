@@ -19,12 +19,12 @@ import {
 } from 'rxjs';
 import { inexorably } from 'rxjs-etc/operators';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
-import { ICheckEvent, IErrorEvent, IRequestEvent } from '../interfaces';
-import { TClientEvent, TDataChannelEvent, TDataChannelTuple } from '../types';
+import { IErrorEvent, IRequestEvent } from '../interfaces';
+import { TClientEvent, TDataChannelEvent, TDataChannelTuple, TOutgoingSignalingEvent } from '../types';
 import { echo } from './echo';
 import { ignoreLateResult } from './ignore-late-result';
 
-export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, send: (event: ICheckEvent | TClientEvent) => void) =>
+export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, send: (event: TOutgoingSignalingEvent) => void) =>
     map(
         ([clientId, subject]: [string, Observable<IRequestEvent | TClientEvent>]) =>
             new Observable<null | TDataChannelTuple>((observer) => {
