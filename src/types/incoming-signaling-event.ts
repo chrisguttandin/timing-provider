@@ -1,4 +1,4 @@
-import { IClosureEvent, IInitEvent, INoticeEvent, IRequestEvent, ITerminationEvent } from '../interfaces';
-import { TClientEvent } from './client-event';
+import { IClosureEvent, IInitEvent, ITerminationEvent } from '../interfaces';
+import { TIncomingNegotiationEvent } from './incoming-negotiation-event';
 
-export type TIncomingSignalingEvent = TClientEvent | IClosureEvent | IInitEvent | INoticeEvent | IRequestEvent | ITerminationEvent;
+export type TIncomingSignalingEvent = IClosureEvent | TIncomingNegotiationEvent | IInitEvent | ITerminationEvent;

@@ -19,14 +19,14 @@ import {
 } from 'rxjs';
 import { inexorably } from 'rxjs-etc/operators';
 import { TUnsubscribeFunction, on } from 'subscribable-things';
-import { IErrorEvent, IRequestEvent } from '../interfaces';
-import { TClientEvent, TDataChannelEvent, TDataChannelTuple, TOutgoingSignalingEvent } from '../types';
+import { IErrorEvent } from '../interfaces';
+import { TDataChannelEvent, TDataChannelTuple, TIncomingNegotiationEvent, TOutgoingSignalingEvent } from '../types';
 import { echo } from './echo';
 import { ignoreLateResult } from './ignore-late-result';
 
 export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnection, send: (event: TOutgoingSignalingEvent) => void) =>
     map(
-        ([clientId, subject]: [string, Observable<IRequestEvent | TClientEvent>]) =>
+        ([clientId, subject]: [string, Observable<TIncomingNegotiationEvent>]) =>
             new Observable<null | TDataChannelTuple>((observer) => {
                 const errorEvents: IErrorEvent[] = [];
                 const errorSubject = new Subject<Error>();
@@ -191,7 +191,7 @@ export const negotiateDataChannels = (createPeerConnection: () => RTCPeerConnect
                 const jsonifyDescription = (description: RTCSessionDescription | RTCSessionDescriptionInit): RTCSessionDescriptionInit =>
                     description instanceof RTCSessionDescription ? description.toJSON() : description;
 
-                const processEvent = (event: IRequestEvent | TClientEvent): Observable<unknown> => {
+                const processEvent = (event: TIncomingNegotiationEvent): Observable<unknown> => {
                     const { type } = event;
 
                     if (type === 'answer' && label !== null) {

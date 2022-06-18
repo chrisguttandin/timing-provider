@@ -1,4 +1,3 @@
-import { ICheckEvent } from '../interfaces';
-import { TClientEvent } from './client-event';
+import { ICandidateEvent, ICheckEvent, IDescriptionEvent, IErrorEvent, ISummaryEvent } from '../interfaces';
 
-export type TOutgoingSignalingEvent = ICheckEvent | TClientEvent;
+export type TOutgoingSignalingEvent = ICandidateEvent | ICheckEvent | IDescriptionEvent | IErrorEvent | ISummaryEvent;

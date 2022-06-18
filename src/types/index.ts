@@ -1,4 +1,3 @@
-export * from './client-event';
 export * from './data-channel-event';
 export * from './data-channel-tuple';
 export * from './event-handler';
@@ -8,6 +7,7 @@ export * from './event-target-factory';
 export * from './event-target-factory-factory';
 export * from './extended-timing-state-vector';
 export * from './grouped-observable';
+export * from './incoming-negotiation-event';
 export * from './incoming-signaling-event';
 export * from './native-event-target';
 export * from './outgoing-signaling-event';
