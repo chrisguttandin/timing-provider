@@ -449,33 +449,41 @@ export const createTimingProviderConstructor = (
                                             return [extendedVector, dataChannelSubjectsAndExtendedVectors];
                                         }
 
-                                        if (this._version === extendedVector.version && !extendedVector.hops.includes(this._origin)) {
-                                            if (index > -1) {
-                                                dataChannelSubjectsAndExtendedVectors[index] = [dataChannelSubject, extendedVector];
-                                            } else {
-                                                dataChannelSubjectsAndExtendedVectors.push([dataChannelSubject, extendedVector]);
+                                        if (this._version === extendedVector.version) {
+                                            const origin = this._hops.length === 0 ? this._origin : this._hops[0];
+
+                                            if (origin > extendedVector.hops[0]) {
+                                                return [extendedVector, [[dataChannelSubject, extendedVector]]];
                                             }
 
-                                            dataChannelSubjectsAndExtendedVectors.sort(
-                                                (
-                                                    [
-                                                        ,
-                                                        {
-                                                            hops: [originA = this._origin, ...hopsA]
-                                                        }
-                                                    ],
-                                                    [
-                                                        ,
-                                                        {
-                                                            hops: [originB = this._origin, ...hopsB]
-                                                        }
-                                                    ]
-                                                ) => {
-                                                    return originA === originB ? hopsA.length - hopsB.length : originA - originB;
+                                            if (!extendedVector.hops.includes(this._origin) && this._hops.length > 0) {
+                                                if (index > -1) {
+                                                    dataChannelSubjectsAndExtendedVectors[index] = [dataChannelSubject, extendedVector];
+                                                } else {
+                                                    dataChannelSubjectsAndExtendedVectors.push([dataChannelSubject, extendedVector]);
                                                 }
-                                            );
 
-                                            return [extendedVector, dataChannelSubjectsAndExtendedVectors];
+                                                dataChannelSubjectsAndExtendedVectors.sort(
+                                                    (
+                                                        [
+                                                            ,
+                                                            {
+                                                                hops: [originA = this._origin, ...hopsA]
+                                                            }
+                                                        ],
+                                                        [
+                                                            ,
+                                                            {
+                                                                hops: [originB = this._origin, ...hopsB]
+                                                            }
+                                                        ]
+                                                    ) => {
+                                                        return originA === originB ? hopsA.length - hopsB.length : originA - originB;
+                                                    }
+                                                );
+
+                                                return [extendedVector, dataChannelSubjectsAndExtendedVectors];
+                                            }
                                         }
                                     }
 
