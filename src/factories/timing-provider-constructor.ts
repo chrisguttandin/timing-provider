@@ -456,7 +456,11 @@ export const createTimingProviderConstructor = (
                                                 return [extendedVector, [[dataChannelSubject, extendedVector]]];
                                             }
 
-                                            if (!extendedVector.hops.includes(this._origin) && this._hops.length > 0) {
+                                            if (
+                                                origin === extendedVector.hops[0] &&
+                                                !extendedVector.hops.includes(this._origin) &&
+                                                this._hops.length > 0
+                                            ) {
                                                 if (index > -1) {
                                                     dataChannelSubjectsAndExtendedVectors[index] = [dataChannelSubject, extendedVector];
                                                 } else {
