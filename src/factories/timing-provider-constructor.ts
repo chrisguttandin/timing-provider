@@ -493,6 +493,7 @@ export const createTimingProviderConstructor = (
 
                                     if (index > -1) {
                                         if (dataChannelSubjectsAndExtendedVectors.length === 1) {
+                                            dataChannelSubjectsAndExtendedVectors[0][0] = null;
                                             dataChannelSubjectsAndExtendedVectors[0][1] = {
                                                 ...dataChannelSubjectsAndExtendedVectors[0][1],
                                                 hops: []
