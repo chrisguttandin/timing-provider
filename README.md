@@ -2,7 +2,6 @@
 
 **An implementation of the timing provider specification.**
 
-[![dependencies](https://img.shields.io/david/chrisguttandin/timing-provider.svg?style=flat-square)](https://github.com/chrisguttandin/timing-provider/network/dependencies)
 [![version](https://img.shields.io/npm/v/timing-provider.svg?style=flat-square)](https://www.npmjs.com/package/timing-provider)
 
 This is an implementation of a TimingProvider as it is defined by the
