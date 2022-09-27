@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@babel/runtime": "^7.19.0",
-        "rxjs": "^7.5.6",
+        "rxjs": "^7.5.7",
         "rxjs-etc": "^10.6.2",
         "subscribable-things": "^2.1.7",
         "timing-object": "^3.1.48",
