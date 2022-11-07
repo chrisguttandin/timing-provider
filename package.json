@@ -12,7 +12,7 @@
         "@babel/runtime": "^7.20.1",
         "rxjs": "^7.5.7",
         "rxjs-etc": "^10.6.2",
-        "subscribable-things": "^2.1.8",
+        "subscribable-things": "^2.1.9",
         "timing-object": "^3.1.49",
         "tslib": "^2.4.0"
     },
