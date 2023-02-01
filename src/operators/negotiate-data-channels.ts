@@ -83,7 +83,10 @@ export const negotiateDataChannels = (
                     const channelTuple = <const>[
                         label !== null,
                         from(on(channel, 'message')).pipe(
-                            map((event) => <TDataChannelEvent>JSON.parse(event.data)),
+                            map((event): TDataChannelEvent & { timestamp: number } => ({
+                                ...JSON.parse(event.data),
+                                timestamp: event.timeStamp ?? performance.now()
+                            })),
                             takeUntil(merge(on(channel, 'close'), on(channel, 'closing'), on(channel, 'error')))
                         ),
                         (event: TDataChannelEvent) => {

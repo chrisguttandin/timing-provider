@@ -340,8 +340,7 @@ export const createTimingProviderConstructor = (
                                         mergeMap((group$) => {
                                             if (group$.key === 'ping') {
                                                 return group$.pipe(
-                                                    map(({ timestamp }) => timestamp ?? performance.now()),
-                                                    tap((eventTime) => send({ message: [eventTime, performance.now()], type: 'pong' })),
+                                                    tap(({ timestamp }) => send({ message: [timestamp, performance.now()], type: 'pong' })),
                                                     ignoreElements()
                                                 );
                                             }
@@ -353,12 +352,7 @@ export const createTimingProviderConstructor = (
                                                         map(() => performance.now()),
                                                         startWith(now)
                                                     ),
-                                                    group$.pipe(
-                                                        map(
-                                                            ({ message, timestamp }) =>
-                                                                [...message, timestamp ?? performance.now()] as const
-                                                        )
-                                                    )
+                                                    group$.pipe(map(({ message, timestamp }) => [...message, timestamp] as const))
                                                 ).pipe(
                                                     computeOffset(),
                                                     scan<number, number[]>(
