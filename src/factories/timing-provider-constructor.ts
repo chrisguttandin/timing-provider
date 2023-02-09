@@ -359,11 +359,7 @@ export const createTimingProviderConstructor = (
                                                         (latestValues, newValue) => [...latestValues.slice(-4), newValue],
                                                         []
                                                     ),
-                                                    map(
-                                                        (values) =>
-                                                            values.reduce((sum, currentValue) => sum + currentValue, 0) / values.length
-                                                    ),
-                                                    map((offset) => offset / 1000),
+                                                    map((values) => Math.min(...values) / 1000),
                                                     map((offset) => [1, offset] as const)
                                                 );
                                             }
