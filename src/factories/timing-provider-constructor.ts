@@ -356,7 +356,7 @@ export const createTimingProviderConstructor = (
                                                 ).pipe(
                                                     computeOffset(),
                                                     scan<number, number[]>(
-                                                        (latestValues, newValue) => [...latestValues.slice(-4), newValue],
+                                                        (latestValues, newValue) => [...latestValues.slice(-59), newValue],
                                                         []
                                                     ),
                                                     map((values) => Math.min(...values) / 1000),
