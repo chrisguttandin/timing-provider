@@ -1,5 +1,6 @@
 import {
     EMPTY,
+    ReplaySubject,
     Subject,
     Subscription,
     catchError,
@@ -14,7 +15,6 @@ import {
     from,
     ignoreElements,
     iif,
-    interval,
     map,
     merge,
     mergeMap,
@@ -331,9 +331,13 @@ export const createTimingProviderConstructor = (
                                     }
                                 }),
                                 mergeMap(([, message$, send]) => {
-                                    send({ type: 'ping' });
+                                    const pingSubject = new ReplaySubject<number>(1);
+                                    const sendPing = () => {
+                                        send({ type: 'ping' });
+                                        pingSubject.next(performance.now());
+                                    };
 
-                                    const now = performance.now();
+                                    sendPing();
 
                                     return message$.pipe(
                                         groupByProperty('type'),
@@ -347,12 +351,19 @@ export const createTimingProviderConstructor = (
 
                                             if (group$.key === 'pong') {
                                                 return zip(
-                                                    interval(1000).pipe(
-                                                        tap(() => send({ type: 'ping' })),
-                                                        map(() => performance.now()),
-                                                        startWith(now)
-                                                    ),
-                                                    group$.pipe(map(({ message, timestamp }) => [...message, timestamp] as const))
+                                                    pingSubject,
+                                                    group$.pipe(
+                                                        map(({ message, timestamp }) => [...message, timestamp] as const),
+                                                        mergeMap((value) =>
+                                                            merge(
+                                                                of(value),
+                                                                timer(1000).pipe(
+                                                                    tap(() => sendPing()),
+                                                                    ignoreElements()
+                                                                )
+                                                            )
+                                                        )
+                                                    )
                                                 ).pipe(
                                                     computeOffset(),
                                                     scan<number, number[]>(
