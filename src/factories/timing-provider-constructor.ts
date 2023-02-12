@@ -1,6 +1,6 @@
 import {
+    BehaviorSubject,
     EMPTY,
-    ReplaySubject,
     Subject,
     Subscription,
     catchError,
@@ -23,8 +23,7 @@ import {
     startWith,
     tap,
     timer,
-    withLatestFrom,
-    zip
+    withLatestFrom
 } from 'rxjs';
 import { equals } from 'rxjs-etc/operators';
 import { online } from 'subscribable-things';
@@ -39,6 +38,7 @@ import {
     translateTimingStateVector
 } from 'timing-object';
 import { IClosureEvent, IInitEvent } from '../interfaces';
+import { sendPeriodicPings } from '../observables/send-periodic-pings';
 import { combineAsTuple } from '../operators/combine-as-tuple';
 import { computeOffset } from '../operators/compute-offset';
 import { convertToArray } from '../operators/convert-to-array';
@@ -47,6 +47,7 @@ import { enforceOrder } from '../operators/enforce-order';
 import { filterUniqueValues } from '../operators/filter-unique-values';
 import { groupByProperty } from '../operators/group-by-property';
 import { maintainArray } from '../operators/maintain-array';
+import { matchPongWithPing } from '../operators/match-pong-with-ping';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
 import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
@@ -331,95 +332,81 @@ export const createTimingProviderConstructor = (
                                     }
                                 }),
                                 mergeMap(([, message$, send]) => {
-                                    const pingSubject = new ReplaySubject<number>(1);
-                                    const sendPing = () => {
-                                        send({ type: 'ping' });
-                                        pingSubject.next(performance.now());
-                                    };
+                                    const pingsSubject = new BehaviorSubject<[number, number[]]>([0, []]);
 
-                                    sendPing();
+                                    return merge(
+                                        sendPeriodicPings(pingsSubject, (index: number) => send({ index, type: 'ping' })),
+                                        message$.pipe(
+                                            groupByProperty('type'),
+                                            mergeMap((group$) => {
+                                                if (group$.key === 'ping') {
+                                                    return group$.pipe(
+                                                        tap(({ index, timestamp }) =>
+                                                            send({ index, message: [timestamp, performance.now()], type: 'pong' })
+                                                        ),
+                                                        ignoreElements()
+                                                    );
+                                                }
 
-                                    return message$.pipe(
-                                        groupByProperty('type'),
-                                        mergeMap((group$) => {
-                                            if (group$.key === 'ping') {
+                                                if (group$.key === 'pong') {
+                                                    return group$.pipe(
+                                                        matchPongWithPing(pingsSubject),
+                                                        computeOffset(),
+                                                        scan<number, number[]>(
+                                                            (latestValues, newValue) => [...latestValues.slice(-59), newValue],
+                                                            []
+                                                        ),
+                                                        map((values) => Math.min(...values) / 1000),
+                                                        map((offset) => [1, offset] as const)
+                                                    );
+                                                }
+
                                                 return group$.pipe(
-                                                    tap(({ timestamp }) => send({ message: [timestamp, performance.now()], type: 'pong' })),
-                                                    ignoreElements()
-                                                );
-                                            }
-
-                                            if (group$.key === 'pong') {
-                                                return zip(
-                                                    pingSubject,
-                                                    group$.pipe(
-                                                        map(({ message, timestamp }) => [...message, timestamp] as const),
-                                                        mergeMap((value) =>
-                                                            merge(
-                                                                of(value),
-                                                                timer(1000).pipe(
-                                                                    tap(() => sendPing()),
-                                                                    ignoreElements()
-                                                                )
-                                                            )
-                                                        )
-                                                    )
-                                                ).pipe(
-                                                    computeOffset(),
-                                                    scan<number, number[]>(
-                                                        (latestValues, newValue) => [...latestValues.slice(-59), newValue],
-                                                        []
-                                                    ),
-                                                    map((values) => Math.min(...values) / 1000),
-                                                    map((offset) => [1, offset] as const)
-                                                );
-                                            }
-
-                                            return group$.pipe(
-                                                map(({ message }) => message),
-                                                map((extendedVector) => {
-                                                    if (this._version > extendedVector.version) {
-                                                        this._sendUpdate(send);
-
-                                                        return null;
-                                                    }
-
-                                                    if (this._version === extendedVector.version) {
-                                                        const origin = this._hops.length === 0 ? this._origin : this._hops[0];
-
-                                                        if (origin < extendedVector.hops[0]) {
+                                                    map(({ message }) => message),
+                                                    map((extendedVector) => {
+                                                        if (this._version > extendedVector.version) {
                                                             this._sendUpdate(send);
 
                                                             return null;
                                                         }
 
-                                                        if (
-                                                            origin === extendedVector.hops[0] &&
-                                                            this._hops.length + 1 < extendedVector.hops.length
-                                                        ) {
-                                                            this._sendUpdate(send);
+                                                        if (this._version === extendedVector.version) {
+                                                            const origin = this._hops.length === 0 ? this._origin : this._hops[0];
 
-                                                            return null;
+                                                            if (origin < extendedVector.hops[0]) {
+                                                                this._sendUpdate(send);
+
+                                                                return null;
+                                                            }
+
+                                                            if (
+                                                                origin === extendedVector.hops[0] &&
+                                                                this._hops.length + 1 < extendedVector.hops.length
+                                                            ) {
+                                                                this._sendUpdate(send);
+
+                                                                return null;
+                                                            }
                                                         }
-                                                    }
 
-                                                    return extendedVector;
-                                                }),
-                                                map((extendedVector) => [0, extendedVector] as const)
-                                            );
-                                        }),
-                                        combineAsTuple<null | TExtendedTimingStateVector, number>([null, 0]),
-                                        distinctUntilChanged(
-                                            ([vectorA, offsetA], [vectorB, offsetB]) => vectorA === vectorB && offsetA === offsetB
-                                        ),
-                                        map(
-                                            ([vector, offset]) =>
-                                                [
-                                                    vector === null ? vector : { ...vector, timestamp: vector.timestamp - offset },
-                                                    send
-                                                ] as const
-                                        ),
-                                        endWith([null, send] as const)
+                                                        return extendedVector;
+                                                    }),
+                                                    map((extendedVector) => [0, extendedVector] as const)
+                                                );
+                                            }),
+                                            combineAsTuple<null | TExtendedTimingStateVector, number>([null, 0]),
+                                            distinctUntilChanged(
+                                                ([vectorA, offsetA], [vectorB, offsetB]) => vectorA === vectorB && offsetA === offsetB
+                                            ),
+                                            map(
+                                                ([vector, offset]) =>
+                                                    [
+                                                        vector === null ? vector : { ...vector, timestamp: vector.timestamp - offset },
+                                                        send
+                                                    ] as const
+                                            ),
+                                            endWith([null, send] as const)
+                                        )
                                     );
                                 })
                             ),
