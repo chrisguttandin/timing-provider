@@ -50,6 +50,7 @@ import { maintainArray } from '../operators/maintain-array';
 import { matchPongWithPing } from '../operators/match-pong-with-ping';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
+import { selectMostLikelyOffset } from '../operators/select-most-likely-offset';
 import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
 import {
     TDataChannelEvent,
@@ -352,11 +353,7 @@ export const createTimingProviderConstructor = (
                                                     return group$.pipe(
                                                         matchPongWithPing(pingsSubject),
                                                         computeOffsetAndRoundTripTime(),
-                                                        scan<number, number[]>(
-                                                            (latestValues, [newValue]) => [...latestValues.slice(-59), newValue],
-                                                            []
-                                                        ),
-                                                        map((values) => Math.min(...values) / 1000),
+                                                        selectMostLikelyOffset(),
                                                         map((offset) => [1, offset] as const)
                                                     );
                                                 }
