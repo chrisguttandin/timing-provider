@@ -1,7 +1,9 @@
 export interface IPongEvent {
     index: number;
 
-    message: [number, number];
+    remoteReceivedTime: number;
+
+    remoteSentTime: number;
 
     type: 'pong';
 }

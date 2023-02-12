@@ -3,22 +3,22 @@ import { marbles } from 'rxjs-marbles';
 
 describe('computeOffsetAndRoundTripTime', () => {
     let localReceivedTime;
-    let localSendTime;
+    let localSentTime;
     let remoteReceivedTime;
-    let remoteSendTime;
+    let remoteSentTime;
 
     beforeEach(() => {
         localReceivedTime = 4;
-        localSendTime = 1;
+        localSentTime = 1;
         remoteReceivedTime = 12;
-        remoteSendTime = 13;
+        remoteSentTime = 13;
     });
 
     it(
         'should compute the expected offset',
         marbles((helpers) => {
             const destination = helpers
-                .cold('a|', { a: [localSendTime, [remoteReceivedTime, remoteSendTime, localReceivedTime]] })
+                .cold('a|', { a: [localSentTime, remoteReceivedTime, remoteSentTime, localReceivedTime] })
                 .pipe(computeOffsetAndRoundTripTime());
             const expected = helpers.cold('a|', { a: [10, 2] });
 

@@ -333,17 +333,22 @@ export const createTimingProviderConstructor = (
                                     }
                                 }),
                                 mergeMap(([, message$, send]) => {
-                                    const pingsSubject = new BehaviorSubject<[number, number[]]>([0, []]);
+                                    const localSentTimesSubject = new BehaviorSubject<[number, number[]]>([0, []]);
 
                                     return merge(
-                                        sendPeriodicPings(pingsSubject, (index: number) => send({ index, type: 'ping' })),
+                                        sendPeriodicPings(localSentTimesSubject, (index: number) => send({ index, type: 'ping' })),
                                         message$.pipe(
                                             groupByProperty('type'),
                                             mergeMap((group$) => {
                                                 if (group$.key === 'ping') {
                                                     return group$.pipe(
                                                         tap(({ index, timestamp }) =>
-                                                            send({ index, message: [timestamp, performance.now()], type: 'pong' })
+                                                            send({
+                                                                index,
+                                                                remoteReceivedTime: timestamp,
+                                                                remoteSentTime: performance.now(),
+                                                                type: 'pong'
+                                                            })
                                                         ),
                                                         ignoreElements()
                                                     );
@@ -351,7 +356,7 @@ export const createTimingProviderConstructor = (
 
                                                 if (group$.key === 'pong') {
                                                     return group$.pipe(
-                                                        matchPongWithPing(pingsSubject),
+                                                        matchPongWithPing(localSentTimesSubject),
                                                         computeOffsetAndRoundTripTime(),
                                                         selectMostLikelyOffset(),
                                                         map((offset) => [1, offset] as const)

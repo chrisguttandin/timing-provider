@@ -4,22 +4,22 @@ import { IPongEvent } from '../interfaces';
 
 export const matchPongWithPing =
     (
-        pingsSubject: Subject<[number, number[]]>
-    ): OperatorFunction<IPongEvent & { timestamp: number; }, [number, readonly [number, number, number]]> =>
+        localSentTimesSubject: Subject<[number, number[]]>
+    ): OperatorFunction<IPongEvent & { timestamp: number }, readonly [number, number, number, number]> =>
     (source) =>
         source.pipe(
-            withLatestFrom(pingsSubject),
-            map(([{ index: indexOfPong, message, timestamp }, [indexOfOldestPing, pings]]) => {
-                if (indexOfPong < indexOfOldestPing) {
+            withLatestFrom(localSentTimesSubject),
+            map(([{ index, remoteReceivedTime, remoteSentTime, timestamp }, [startIndex, localSentTimes]]) => {
+                if (index < startIndex) {
                     return null;
                 }
 
-                const difference = indexOfPong - indexOfOldestPing;
-                const [localSendTime, ...unansweredPings] = pings.slice(difference);
+                const numberOfMissingPings = index - startIndex;
+                const [localSentTime, ...unansweredPings] = localSentTimes.slice(numberOfMissingPings);
 
-                pingsSubject.next([indexOfOldestPing + difference + 1, unansweredPings]);
+                localSentTimesSubject.next([startIndex + numberOfMissingPings + 1, unansweredPings]);
 
-                return <[number, readonly [number, number, number]]>[localSendTime, <const>[...message, timestamp]];
+                return <const>[localSentTime, remoteReceivedTime, remoteSentTime, timestamp];
             }),
             filter(isNotNullish)
         );

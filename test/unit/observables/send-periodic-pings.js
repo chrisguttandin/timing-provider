@@ -3,9 +3,9 @@ import { sendPeriodicPings } from '../../../src/observables/send-periodic-pings'
 import { stub } from 'sinon';
 
 describe('sendPeriodicPings', () => {
+    let localSentTimesSubject;
     let now;
     let originalNow;
-    let pingsSubject;
     let sendPing;
     let triggerSubject;
 
@@ -15,10 +15,10 @@ describe('sendPeriodicPings', () => {
     });
 
     beforeEach(() => {
+        localSentTimesSubject = new BehaviorSubject([0, []]);
         now = stub();
         // eslint-disable-next-line no-undef
         originalNow = global.performance.now;
-        pingsSubject = new BehaviorSubject([0, []]);
         sendPing = stub();
         triggerSubject = new Subject();
 
@@ -33,7 +33,7 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should not emit any value', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
@@ -49,7 +49,7 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should call sendPing()', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
@@ -61,11 +61,11 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should update the stored pings', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
-                        expect(pingsSubject.getValue()).to.deep.equal([0, [0.123456789]]);
+                        expect(localSentTimesSubject.getValue()).to.deep.equal([0, [0.123456789]]);
 
                         done();
                     }
@@ -80,7 +80,7 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should not emit any value', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
@@ -96,7 +96,7 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should call sendPing()', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
@@ -108,11 +108,11 @@ describe('sendPeriodicPings', () => {
         });
 
         it('should update the stored pings', (done) => {
-            sendPeriodicPings(pingsSubject, sendPing)
+            sendPeriodicPings(localSentTimesSubject, sendPing)
                 .pipe(takeUntil(triggerSubject))
                 .subscribe({
                     complete() {
-                        expect(pingsSubject.getValue()).to.deep.equal([0, [0.123456789, 1.23456789]]);
+                        expect(localSentTimesSubject.getValue()).to.deep.equal([0, [0.123456789, 1.23456789]]);
 
                         done();
                     }
