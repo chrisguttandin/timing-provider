@@ -40,7 +40,7 @@ import {
 import { IClosureEvent, IInitEvent } from '../interfaces';
 import { sendPeriodicPings } from '../observables/send-periodic-pings';
 import { combineAsTuple } from '../operators/combine-as-tuple';
-import { computeOffset } from '../operators/compute-offset';
+import { computeOffsetAndRoundTripTime } from '../operators/compute-offset-and-round-trip-time';
 import { convertToArray } from '../operators/convert-to-array';
 import { demultiplexMessages } from '../operators/demultiplex-messages';
 import { enforceOrder } from '../operators/enforce-order';
@@ -351,9 +351,9 @@ export const createTimingProviderConstructor = (
                                                 if (group$.key === 'pong') {
                                                     return group$.pipe(
                                                         matchPongWithPing(pingsSubject),
-                                                        computeOffset(),
+                                                        computeOffsetAndRoundTripTime(),
                                                         scan<number, number[]>(
-                                                            (latestValues, newValue) => [...latestValues.slice(-59), newValue],
+                                                            (latestValues, [newValue]) => [...latestValues.slice(-59), newValue],
                                                             []
                                                         ),
                                                         map((values) => Math.min(...values) / 1000),
