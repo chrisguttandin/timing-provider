@@ -71,41 +71,81 @@ export const negotiateDataChannels = (
                             numberOfGatheredCandidates += 1;
                         }
                     });
-                const subscribeToDataChannel = () => {
+                const subscribeToDataChannels = () => {
                     const unsubscribeFunctions = [
                         on(
-                            dataChannel,
+                            reliableDataChannel,
                             'close'
                         )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "close".'))),
                         on(
-                            dataChannel,
+                            reliableDataChannel,
                             'closing'
                         )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "closing".'))),
                         on(
-                            dataChannel,
+                            reliableDataChannel,
+                            'error'
+                        )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "error".'))),
+                        on(
+                            unreliableDataChannel,
+                            'close'
+                        )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "close".'))),
+                        on(
+                            unreliableDataChannel,
+                            'closing'
+                        )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "closing".'))),
+                        on(
+                            unreliableDataChannel,
                             'error'
                         )(() => errorSubject.next(new Error('RTCDataChannel fired unexpected event of type "error".')))
                     ];
                     const channelTuple = <const>[
                         label !== null,
-                        from(on(dataChannel, 'message')).pipe(
+                        from(merge(on(reliableDataChannel, 'message'), on(unreliableDataChannel, 'message'))).pipe(
                             map((event): TDataChannelEvent & { timestamp: number } => ({
                                 ...JSON.parse(event.data),
                                 timestamp: event.timeStamp ?? performance.now()
                             })),
-                            takeUntil(merge(on(dataChannel, 'close'), on(dataChannel, 'closing'), on(dataChannel, 'error')))
+                            takeUntil(
+                                merge(
+                                    on(reliableDataChannel, 'close'),
+                                    on(reliableDataChannel, 'closing'),
+                                    on(reliableDataChannel, 'error'),
+                                    on(unreliableDataChannel, 'close'),
+                                    on(unreliableDataChannel, 'closing'),
+                                    on(unreliableDataChannel, 'error')
+                                )
+                            )
                         ),
                         (event: TDataChannelEvent) => {
+                            const dataChannel = event.type === 'update' ? reliableDataChannel : unreliableDataChannel;
+
                             if (dataChannel.readyState === 'open') {
                                 dataChannel.send(JSON.stringify(event));
                             }
                         }
                     ];
 
-                    if (dataChannel.readyState === 'open') {
+                    if (reliableDataChannel.readyState === 'open' && unreliableDataChannel.readyState === 'open') {
                         observer.next(channelTuple);
                     } else {
-                        unsubscribeFunctions.push(on(dataChannel, 'open')(() => observer.next(channelTuple)));
+                        unsubscribeFunctions.push(
+                            on(
+                                reliableDataChannel,
+                                'open'
+                            )(() => {
+                                if (unreliableDataChannel.readyState === 'open') {
+                                    observer.next(channelTuple);
+                                }
+                            }),
+                            on(
+                                unreliableDataChannel,
+                                'open'
+                            )(() => {
+                                if (reliableDataChannel.readyState === 'open') {
+                                    observer.next(channelTuple);
+                                }
+                            })
+                        );
                     }
 
                     return () => unsubscribeFunctions.forEach((unsubscribeFunction) => unsubscribeFunction());
@@ -153,34 +193,47 @@ export const negotiateDataChannels = (
                     unsubscribeFromDataChannel();
                     unsubscribeFromPeerConnection();
 
-                    if (dataChannel.readyState === 'open') {
+                    if (reliableDataChannel.readyState === 'open' || unreliableDataChannel.readyState === 'open') {
                         observer.next(null);
                     }
 
-                    dataChannel.close();
+                    reliableDataChannel.close();
+                    unreliableDataChannel.close();
                     peerConnection.close();
 
-                    peerConnection = createPeerConnection();
-                    dataChannel = peerConnection.createDataChannel('', { id: 0, negotiated: true, ordered: true });
                     numberOfAppliedCandidates = 0;
                     numberOfExpectedCandidates = Infinity;
                     numberOfGatheredCandidates = 0;
+                    peerConnection = createPeerConnection();
                     receivedCandidates.length = 0;
+                    reliableDataChannel = peerConnection.createDataChannel('', { id: 0, negotiated: true, ordered: true });
+                    unreliableDataChannel = peerConnection.createDataChannel('', {
+                        id: 1,
+                        maxRetransmits: 0,
+                        negotiated: true,
+                        ordered: false
+                    });
                     unsubscribeFromCandidates = subscribeToCandidates();
-                    unsubscribeFromDataChannel = subscribeToDataChannel();
+                    unsubscribeFromDataChannel = subscribeToDataChannels();
                     unsubscribeFromPeerConnection = subscribeToPeerConnection();
                     version = newVersion;
                 };
 
-                let peerConnection = createPeerConnection();
-                let dataChannel = peerConnection.createDataChannel('', { id: 0, negotiated: true, ordered: true });
                 let label: null | string = null;
                 let numberOfAppliedCandidates = 0;
                 let numberOfExpectedCandidates = Infinity;
                 let numberOfGatheredCandidates = 0;
+                let peerConnection = createPeerConnection();
+                let reliableDataChannel = peerConnection.createDataChannel('', { id: 0, negotiated: true, ordered: true });
                 let unrecoverableError: null | Error = null;
+                let unreliableDataChannel = peerConnection.createDataChannel('', {
+                    id: 1,
+                    maxRetransmits: 0,
+                    negotiated: true,
+                    ordered: false
+                });
                 let unsubscribeFromCandidates = subscribeToCandidates();
-                let unsubscribeFromDataChannel = subscribeToDataChannel();
+                let unsubscribeFromDataChannel = subscribeToDataChannels();
                 let unsubscribeFromPeerConnection = subscribeToPeerConnection();
                 let version = 0;
 
@@ -327,7 +380,7 @@ export const negotiateDataChannels = (
                                     client: { id: clientId },
                                     type: 'check'
                                 }),
-                            () => dataChannel.readyState === 'connecting',
+                            () => reliableDataChannel.readyState === 'connecting' || unreliableDataChannel.readyState === 'connecting',
                             interval(5000)
                         ),
                         inexorably((notification) => {
@@ -369,7 +422,8 @@ export const negotiateDataChannels = (
                             unsubscribeFromDataChannel();
                             unsubscribeFromPeerConnection();
 
-                            dataChannel.close();
+                            reliableDataChannel.close();
+                            unreliableDataChannel.close();
                             peerConnection.close();
                         })
                     )
