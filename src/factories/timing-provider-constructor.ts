@@ -95,7 +95,7 @@ export const createTimingProviderConstructor = (
 
         private _subscription: null | Subscription;
 
-        private _updateRequestsSubject: Subject<readonly [null | TExtendedTimingStateVector, null]>;
+        private _updateRequestsSubject: Subject<readonly [TExtendedTimingStateVector, null]>;
 
         private _vector: ITimingStateVector;
 
