@@ -10,12 +10,12 @@ describe('combineAsTuple', () => {
         secondElement = 'a fake second element';
     });
 
-    describe('without emit the initial value', () => {
+    describe('without any value', () => {
         it(
             'should mirror an empty observable',
             marbles((helpers) => {
                 const destination = helpers.cold('|').pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('(a|)', { a: [firstElement, secondElement] });
+                const expected = helpers.cold('(|)');
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -28,7 +28,7 @@ describe('combineAsTuple', () => {
             marbles((helpers) => {
                 const err = new Error('a fake error');
                 const destination = helpers.cold('#', null, err).pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('(a#)', { a: [firstElement, secondElement] }, err);
+                const expected = helpers.cold('(#)', null, err);
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -41,7 +41,7 @@ describe('combineAsTuple', () => {
             marbles((helpers) => {
                 const newFirstElement = 'a fake new first element';
                 const destination = helpers.cold('a---|', { a: [0, newFirstElement] }).pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('(ab)|', { a: [firstElement, secondElement], b: [newFirstElement, secondElement] });
+                const expected = helpers.cold('a---|', { a: [newFirstElement, secondElement] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -54,7 +54,7 @@ describe('combineAsTuple', () => {
             marbles((helpers) => {
                 const newSecondElement = 'a fake new second element';
                 const destination = helpers.cold('a---|', { a: [1, newSecondElement] }).pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('(ab)|', { a: [firstElement, secondElement], b: [firstElement, newSecondElement] });
+                const expected = helpers.cold('a---|', { a: [firstElement, newSecondElement] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -70,10 +70,9 @@ describe('combineAsTuple', () => {
                 const destination = helpers
                     .cold('a---b|', { a: [0, newFirstElement], b: [1, newSecondElement] })
                     .pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('(ab)c|', {
-                    a: [firstElement, secondElement],
-                    b: [newFirstElement, secondElement],
-                    c: [newFirstElement, newSecondElement]
+                const expected = helpers.cold('a---b|', {
+                    a: [newFirstElement, secondElement],
+                    b: [newFirstElement, newSecondElement]
                 });
 
                 helpers.expect(destination).toBeObservable(expected);

@@ -1,4 +1,4 @@
-import { OperatorFunction, scan, startWith } from 'rxjs';
+import { OperatorFunction, scan } from 'rxjs';
 
 export const combineAsTuple =
     <FirstElement, SecondElement>(
@@ -12,6 +12,5 @@ export const combineAsTuple =
                 }
 
                 return [lastValue[0], value] as const;
-            }, initialValue),
-            startWith(initialValue)
+            }, initialValue)
         );
