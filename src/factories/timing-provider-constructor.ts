@@ -38,7 +38,6 @@ import {
     translateTimingStateVector
 } from 'timing-object';
 import { IClosureEvent, IInitEvent } from '../interfaces';
-import { sendPeriodicPings } from '../observables/send-periodic-pings';
 import { combineAsTuple } from '../operators/combine-as-tuple';
 import { computeOffsetAndRoundTripTime } from '../operators/compute-offset-and-round-trip-time';
 import { convertToArray } from '../operators/convert-to-array';
@@ -51,6 +50,7 @@ import { matchPongWithPing } from '../operators/match-pong-with-ping';
 import { negotiateDataChannels } from '../operators/negotiate-data-channels';
 import { retryBackoff } from '../operators/retry-backoff';
 import { selectMostLikelyOffset } from '../operators/select-most-likely-offset';
+import { sendPeriodicPings } from '../operators/send-periodic-pings';
 import { takeUntilFatalValue } from '../operators/take-until-fatal-value';
 import {
     TDataChannelEvent,
@@ -336,8 +336,12 @@ export const createTimingProviderConstructor = (
                                     const localSentTimesSubject = new BehaviorSubject<[number, number[]]>([0, []]);
 
                                     return merge(
-                                        sendPeriodicPings(localSentTimesSubject, (index: number) => send({ index, type: 'ping' })),
                                         message$.pipe(
+                                            sendPeriodicPings(
+                                                localSentTimesSubject,
+                                                () => performance.now(),
+                                                (index: number) => send({ index, type: 'ping' })
+                                            ),
                                             groupByProperty('type'),
                                             mergeMap((group$) => {
                                                 if (group$.key === 'ping') {
