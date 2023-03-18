@@ -12,7 +12,6 @@ export const sendPeriodicPings =
         return merge(
             source.pipe(finalize(() => closeSubject.next(null))),
             timer(0, 1000).pipe(
-                takeUntil(closeSubject),
                 map((_, index) => {
                     sendPing(index);
 
@@ -22,7 +21,8 @@ export const sendPeriodicPings =
                 tap(([localSentTime, [startIndex, localSentTimes]]) =>
                     localSentTimesSubject.next([startIndex, [...localSentTimes, localSentTime]])
                 ),
-                ignoreElements()
+                ignoreElements(),
+                takeUntil(closeSubject)
             )
         );
     };
