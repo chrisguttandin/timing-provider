@@ -35,18 +35,20 @@ export const negotiateDataChannels = (
                 const errorSubject = new Subject<Error>();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
                 const createAndSendOffer = () =>
-                    ignoreLateResult(peerConnection.createOffer()).pipe(
-                        mergeMap((offer) =>
-                            ignoreLateResult(peerConnection.setLocalDescription(offer)).pipe(
-                                tap(() =>
-                                    sendSignalingEvent({
-                                        ...jsonifyDescription(offer),
-                                        client: { id: clientId },
-                                        version
-                                    })
-                                )
-                            )
-                        )
+                    ignoreLateResult(peerConnection.setLocalDescription()).pipe(
+                        tap(() => {
+                            const { localDescription } = peerConnection;
+
+                            if (localDescription === null) {
+                                throw new Error('The local description is not set.');
+                            }
+
+                            sendSignalingEvent({
+                                ...jsonifyDescription(localDescription),
+                                client: { id: clientId },
+                                version
+                            });
+                        })
                     );
                 const subscribeToCandidates = () =>
                     on(
@@ -259,7 +261,7 @@ export const negotiateDataChannels = (
                         if (version === event.version) {
                             return ignoreLateResult(peerConnection.setRemoteDescription(event)).pipe(
                                 mergeMap(() => from(receivedCandidates)),
-                                concatMap((receivedCandidate) => ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))),
+                                mergeMap((receivedCandidate) => ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))),
                                 count(),
                                 mergeMap((numberOfNewlyAppliedCandidates) =>
                                     ignoreLateResult(addFinalCandidate(numberOfNewlyAppliedCandidates))
@@ -314,23 +316,33 @@ export const negotiateDataChannels = (
                         }
 
                         return ignoreLateResult(peerConnection.setRemoteDescription(event)).pipe(
-                            mergeMap(() => ignoreLateResult(peerConnection.createAnswer())),
-                            mergeMap((answer) =>
-                                ignoreLateResult(peerConnection.setLocalDescription(answer)).pipe(
-                                    tap(() =>
-                                        sendSignalingEvent({
-                                            ...jsonifyDescription(answer),
-                                            client: { id: clientId },
-                                            version
+                            mergeMap(() =>
+                                merge(
+                                    ignoreLateResult(peerConnection.setLocalDescription()).pipe(
+                                        tap(() => {
+                                            const { localDescription } = peerConnection;
+
+                                            if (localDescription === null) {
+                                                throw new Error('The local description is not set.');
+                                            }
+
+                                            sendSignalingEvent({
+                                                ...jsonifyDescription(localDescription),
+                                                client: { id: clientId },
+                                                version
+                                            });
                                         })
+                                    ),
+                                    from(receivedCandidates).pipe(
+                                        mergeMap((receivedCandidate) =>
+                                            ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))
+                                        ),
+                                        count(),
+                                        mergeMap((numberOfNewlyAppliedCandidates) =>
+                                            ignoreLateResult(addFinalCandidate(numberOfNewlyAppliedCandidates))
+                                        )
                                     )
                                 )
-                            ),
-                            mergeMap(() => from(receivedCandidates)),
-                            concatMap((receivedCandidate) => ignoreLateResult(peerConnection.addIceCandidate(receivedCandidate))),
-                            count(),
-                            mergeMap((numberOfNewlyAppliedCandidates) =>
-                                ignoreLateResult(addFinalCandidate(numberOfNewlyAppliedCandidates))
                             )
                         );
                     }
