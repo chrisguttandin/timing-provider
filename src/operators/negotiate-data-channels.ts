@@ -33,6 +33,7 @@ export const negotiateDataChannels = (
                 const errorEvents: IErrorEvent[] = [];
                 const errorSubject = new Subject<Error>();
                 const receivedCandidates: RTCIceCandidateInit[] = [];
+                const resetSubject = new Subject();
                 const createAndSendOffer = () =>
                     ignoreLateResult(peerConnection.setLocalDescription()).pipe(
                         tap(() => {
@@ -108,6 +109,7 @@ export const negotiateDataChannels = (
                             })),
                             takeUntil(
                                 merge(
+                                    resetSubject,
                                     on(reliableDataChannel, 'close'),
                                     on(reliableDataChannel, 'closing'),
                                     on(reliableDataChannel, 'error'),
@@ -193,6 +195,8 @@ export const negotiateDataChannels = (
                     unsubscribeFromCandidates();
                     unsubscribeFromDataChannel();
                     unsubscribeFromPeerConnection();
+
+                    resetSubject.next(null);
 
                     if (reliableDataChannel.readyState === 'open' || unreliableDataChannel.readyState === 'open') {
                         observer.next(null);
@@ -402,7 +406,9 @@ export const negotiateDataChannels = (
                     )
                 )
                     .pipe(
-                        mergeMap((event) => processEvent(event)),
+                        mergeMap((event) =>
+                            processEvent(event).pipe(takeUntil(merge(resetSubject, concat(subject.pipe(ignoreElements()), of(null)))))
+                        ),
                         retry({
                             delay: (err) => {
                                 if (err === unrecoverableError) {
