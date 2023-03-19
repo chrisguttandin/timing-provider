@@ -2,7 +2,6 @@ import {
     EMPTY,
     Observable,
     Subject,
-    concatMap,
     count,
     defer,
     finalize,
@@ -403,7 +402,7 @@ export const negotiateDataChannels = (
                     )
                 )
                     .pipe(
-                        concatMap((event) => processEvent(event)),
+                        mergeMap((event) => processEvent(event)),
                         retry({
                             delay: (err) => {
                                 if (err === unrecoverableError) {
