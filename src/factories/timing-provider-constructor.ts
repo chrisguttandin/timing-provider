@@ -60,6 +60,7 @@ import {
     TTimingProviderConstructor
 } from '../types';
 import type { createSignalingFactory } from './signaling-factory';
+import type { createSortByHops } from './sort-by-hops';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
@@ -68,7 +69,8 @@ export const createTimingProviderConstructor = (
     createSignaling: ReturnType<typeof createSignalingFactory>,
     eventTargetConstructor: TEventTargetConstructor,
     performance: Window['performance'],
-    setTimeout: Window['setTimeout']
+    setTimeout: Window['setTimeout'],
+    sortByHops: ReturnType<typeof createSortByHops>
 ): TTimingProviderConstructor => {
     return class TimingProvider extends eventTargetConstructor<ITimingProviderEventMap> implements ITimingProvider {
         private _endPosition: number;
@@ -461,24 +463,7 @@ export const createTimingProviderConstructor = (
                                                     dataChannelSubjectsAndExtendedVectors.push([dataChannelSubject, extendedVector]);
                                                 }
 
-                                                dataChannelSubjectsAndExtendedVectors.sort(
-                                                    (
-                                                        [
-                                                            ,
-                                                            {
-                                                                hops: [originA = this._origin, ...hopsA]
-                                                            }
-                                                        ],
-                                                        [
-                                                            ,
-                                                            {
-                                                                hops: [originB = this._origin, ...hopsB]
-                                                            }
-                                                        ]
-                                                    ) => {
-                                                        return originA === originB ? hopsA.length - hopsB.length : originA - originB;
-                                                    }
-                                                );
+                                                sortByHops(dataChannelSubjectsAndExtendedVectors);
 
                                                 return [extendedVector, dataChannelSubjectsAndExtendedVectors];
                                             }
@@ -490,7 +475,10 @@ export const createTimingProviderConstructor = (
                                             dataChannelSubjectsAndExtendedVectors[0][0] = null;
                                             dataChannelSubjectsAndExtendedVectors[0][1] = {
                                                 ...dataChannelSubjectsAndExtendedVectors[0][1],
-                                                hops: []
+                                                hops: [
+                                                    dataChannelSubjectsAndExtendedVectors[0][0].hops[0],
+                                                    ...dataChannelSubjectsAndExtendedVectors[0][0].hops.map(() => this._origin)
+                                                ]
                                             };
                                         } else {
                                             dataChannelSubjectsAndExtendedVectors.splice(index, 1);
