@@ -1,6 +1,7 @@
-import { Observable, OperatorFunction, Subject, Subscription, finalize, take } from 'rxjs';
+import { Observable, OperatorFunction, Subject, Subscription, take } from 'rxjs';
 import { ITerminationEvent } from '../interfaces';
 import { TIncomingNegotiationEvent } from '../types';
+import { ultimately } from './ultimately';
 
 export const demultiplexMessages =
     (
@@ -20,7 +21,7 @@ export const demultiplexMessages =
                 });
             };
 
-            return source.pipe(finalize(() => completeAll())).subscribe({
+            return source.pipe(ultimately(() => completeAll())).subscribe({
                 complete(): void {
                     observer.complete();
                 },
