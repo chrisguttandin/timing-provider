@@ -4,9 +4,11 @@ import { marbles } from 'rxjs-marbles';
 
 describe('demultiplexMessages', () => {
     let clientId;
+    let getClientId;
 
     beforeEach(() => {
         clientId = 'a fake client id';
+        getClientId = () => clientId;
     });
 
     describe('without any event', () => {
@@ -14,7 +16,7 @@ describe('demultiplexMessages', () => {
             'should mirror an empty observable',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('|').pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('|').pipe(demultiplexMessages(getClientId, timer));
                 const expected = helpers.cold('|');
 
                 helpers.expect(destination).toBeObservable(expected);
@@ -28,7 +30,7 @@ describe('demultiplexMessages', () => {
             marbles((helpers) => {
                 const err = new Error('a fake error');
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('#', null, err).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('#', null, err).pipe(demultiplexMessages(getClientId, timer));
                 const expected = helpers.cold('#', null, err);
 
                 helpers.expect(destination).toBeObservable(expected);
@@ -53,7 +55,7 @@ describe('demultiplexMessages', () => {
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
@@ -69,7 +71,7 @@ describe('demultiplexMessages', () => {
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
-                    demultiplexMessages(timer),
+                    demultiplexMessages(getClientId, timer),
                     mergeMap(([, subject]) => subject)
                 );
                 const expected = helpers.hot('a|', { a: event });
@@ -80,7 +82,7 @@ describe('demultiplexMessages', () => {
 
         it('should complete the subject when unsubscribing', (done) => {
             concat(of(event), NEVER)
-                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, subject]) => {
                         subject.subscribe({
@@ -104,7 +106,7 @@ describe('demultiplexMessages', () => {
                     ]),
                     NEVER
                 )
-                    .pipe(demultiplexMessages(EMPTY))
+                    .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
                         next: ([, subject]) => {
                             subject.subscribe({
@@ -133,7 +135,7 @@ describe('demultiplexMessages', () => {
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
@@ -149,7 +151,7 @@ describe('demultiplexMessages', () => {
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
-                    demultiplexMessages(timer),
+                    demultiplexMessages(getClientId, timer),
                     mergeMap(([, subject]) => subject)
                 );
                 const expected = helpers.hot('a|', { a: event });
@@ -160,7 +162,7 @@ describe('demultiplexMessages', () => {
 
         it('should complete the subject when unsubscribing', (done) => {
             concat(of(event), NEVER)
-                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, subject]) => {
                         subject.subscribe({
@@ -184,7 +186,7 @@ describe('demultiplexMessages', () => {
                     ]),
                     NEVER
                 )
-                    .pipe(demultiplexMessages(EMPTY))
+                    .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
                         next: ([, subject]) => {
                             subject.subscribe({
@@ -213,7 +215,7 @@ describe('demultiplexMessages', () => {
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
@@ -229,7 +231,7 @@ describe('demultiplexMessages', () => {
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
-                    demultiplexMessages(timer),
+                    demultiplexMessages(getClientId, timer),
                     mergeMap(([, subject]) => subject)
                 );
                 const expected = helpers.hot('a|', { a: event });
@@ -240,7 +242,7 @@ describe('demultiplexMessages', () => {
 
         it('should complete the subject when unsubscribing', (done) => {
             concat(of(event), NEVER)
-                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, subject]) => {
                         subject.subscribe({
@@ -264,7 +266,7 @@ describe('demultiplexMessages', () => {
                     ]),
                     NEVER
                 )
-                    .pipe(demultiplexMessages(EMPTY))
+                    .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
                         next: ([, subject]) => {
                             subject.subscribe({
@@ -293,7 +295,7 @@ describe('demultiplexMessages', () => {
             'should emit an observable with the client id and a subject',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
                 const expected = helpers.cold('a|', { a: [clientId, subject] });
 
@@ -309,7 +311,7 @@ describe('demultiplexMessages', () => {
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
-                    demultiplexMessages(timer),
+                    demultiplexMessages(getClientId, timer),
                     mergeMap(([, subject]) => subject)
                 );
                 const expected = helpers.hot('a|', { a: event });
@@ -320,7 +322,7 @@ describe('demultiplexMessages', () => {
 
         it('should complete the subject when unsubscribing', (done) => {
             concat(of(event), NEVER)
-                .pipe(demultiplexMessages(EMPTY), takeUntil(interval(1)))
+                .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, subject]) => {
                         subject.subscribe({
@@ -344,7 +346,7 @@ describe('demultiplexMessages', () => {
                     ]),
                     NEVER
                 )
-                    .pipe(demultiplexMessages(EMPTY))
+                    .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
                         next: ([, subject]) => {
                             subject.subscribe({
@@ -373,7 +375,7 @@ describe('demultiplexMessages', () => {
             'should not emit any observable',
             marbles((helpers) => {
                 const timer = helpers.cold('a|');
-                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(timer));
+                const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const expected = helpers.cold('-|');
 
                 helpers.expect(destination).toBeObservable(expected);

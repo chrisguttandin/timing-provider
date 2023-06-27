@@ -1,10 +1,11 @@
-import { Observable, OperatorFunction, Subject, Subscription, take } from 'rxjs';
+import { Observable, OperatorFunction, Subject, Subscription, skip, take } from 'rxjs';
 import { ITerminationEvent } from '../interfaces';
 import { TIncomingNegotiationEvent } from '../types';
 import { ultimately } from './ultimately';
 
 export const demultiplexMessages =
     (
+        getClientId: () => string,
         timer: Observable<unknown>
     ): OperatorFunction<TIncomingNegotiationEvent | ITerminationEvent, [string, Observable<TIncomingNegotiationEvent>]> =>
     (source) =>
@@ -41,7 +42,12 @@ export const demultiplexMessages =
                             subject.complete();
                         }
 
-                        subjects.set(remoteClientId, [null, timer.pipe(take(1)).subscribe(() => subjects.delete(remoteClientId))]); // tslint:disable-line:rxjs-no-nested-subscribe
+                        subjects.set(remoteClientId, [
+                            null,
+                            timer
+                                .pipe(skip(getClientId() < remoteClientId ? 1 : 0), take(1))
+                                .subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
+                        ]);
                     } else {
                         if (subject === null && subscription === null) {
                             const newSubject = new Subject<TIncomingNegotiationEvent>();

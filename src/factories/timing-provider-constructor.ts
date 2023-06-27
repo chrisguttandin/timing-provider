@@ -280,7 +280,7 @@ export const createTimingProviderConstructor = (
 
                             return of(event);
                         }),
-                        demultiplexMessages(timer(10_000)),
+                        demultiplexMessages(() => this._clientId, timer(10_000)),
                         negotiateDataChannels(
                             () =>
                                 new RTCPeerConnection({
