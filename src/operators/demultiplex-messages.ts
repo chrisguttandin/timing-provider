@@ -48,16 +48,14 @@ export const demultiplexMessages =
                                 .pipe(skip(getClientId() < remoteClientId ? 1 : 0), take(1))
                                 .subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
                         ]);
-                    } else {
-                        if (subject === null && subscription === null) {
-                            const newSubject = new Subject<TIncomingNegotiationEvent>();
+                    } else if (subject === null && subscription === null) {
+                        const newSubject = new Subject<TIncomingNegotiationEvent>();
 
-                            subjects.set(remoteClientId, [newSubject, null]);
-                            observer.next([remoteClientId, newSubject.asObservable()]);
-                            newSubject.next(event);
-                        } else if (subject !== null) {
-                            subject.next(event);
-                        }
+                        subjects.set(remoteClientId, [newSubject, null]);
+                        observer.next([remoteClientId, newSubject.asObservable()]);
+                        newSubject.next(event);
+                    } else if (subscription === null) {
+                        subject.next(event);
                     }
                 }
             });
