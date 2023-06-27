@@ -53,7 +53,7 @@ export const demultiplexMessages =
                             const newSubject = new Subject<TIncomingNegotiationEvent>();
 
                             subjects.set(remoteClientId, [newSubject, null]);
-                            observer.next([remoteClientId, newSubject]);
+                            observer.next([remoteClientId, newSubject.asObservable()]);
                             newSubject.next(event);
                         } else if (subject !== null) {
                             subject.next(event);

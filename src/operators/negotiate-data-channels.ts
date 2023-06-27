@@ -28,7 +28,7 @@ export const negotiateDataChannels = (
     sendSignalingEvent: (event: TOutgoingSignalingEvent) => void
 ) =>
     map(
-        ([clientId, subject]: [string, Observable<TIncomingNegotiationEvent>]) =>
+        ([clientId, observable]: [string, Observable<TIncomingNegotiationEvent>]) =>
             new Observable<null | TDataChannelTuple>((observer) => {
                 const errorEvents: IErrorEvent[] = [];
                 const errorSubject = new Subject<Error>();
@@ -388,7 +388,7 @@ export const negotiateDataChannels = (
                     defer(() => from(errorEvents)),
                     // tslint:disable-next-line:rxjs-throw-error
                     errorSubject.pipe(mergeMap((err) => throwError(() => err))),
-                    subject.pipe(
+                    observable.pipe(
                         echo(
                             () =>
                                 sendSignalingEvent({
