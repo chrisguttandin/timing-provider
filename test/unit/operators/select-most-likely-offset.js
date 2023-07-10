@@ -29,10 +29,10 @@ describe('selectMostLikelyOffset', () => {
 
     describe('with one tuple', () => {
         it(
-            'should emit the offset (devided by 1000) of the first tuple',
+            'should emit the tuple',
             marbles((helpers) => {
                 const destination = helpers.cold('a|', { a: [1, 2] }).pipe(selectMostLikelyOffset());
-                const expected = helpers.cold('a|', { a: 1 / 1000 });
+                const expected = helpers.cold('a|', { a: [1, 2] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -41,10 +41,10 @@ describe('selectMostLikelyOffset', () => {
 
     describe('with two tuples', () => {
         it(
-            'should emit the offset (devided by 1000) of the tuple with the smallest round trip time',
+            'should emit the tuple with the smallest round trip time',
             marbles((helpers) => {
                 const destination = helpers.cold('ab|', { a: [1, 2], b: [3, 4] }).pipe(selectMostLikelyOffset());
-                const expected = helpers.cold('ab|', { a: 1 / 1000, b: 1 / 1000 });
+                const expected = helpers.cold('ab|', { a: [1, 2], b: [1, 2] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -53,10 +53,10 @@ describe('selectMostLikelyOffset', () => {
 
     describe('with three tuples', () => {
         it(
-            'should emit the offset (devided by 1000) of the tuple with the smallest round trip time',
+            'should emit the tuple with the smallest round trip time',
             marbles((helpers) => {
                 const destination = helpers.cold('ab|', { a: [6, 5], b: [4, 3], c: [2, 1] }).pipe(selectMostLikelyOffset());
-                const expected = helpers.cold('ab|', { a: 6 / 1000, b: 4 / 1000, c: 2 / 1000 });
+                const expected = helpers.cold('ab|', { a: [6, 5], b: [4, 3], c: [2, 1] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -65,10 +65,10 @@ describe('selectMostLikelyOffset', () => {
 
     describe('with sixty tuples', () => {
         it(
-            'should emit the offset (devided by 1000) of the tuple with the smallest round trip time',
+            'should emit the tuple with the smallest round trip time',
             marbles((helpers) => {
                 const destination = helpers.cold(`a${'b'.repeat(59)}|`, { a: [1, 2], b: [3, 4] }).pipe(selectMostLikelyOffset());
-                const expected = helpers.cold(`${'a'.repeat(60)}|`, { a: 1 / 1000 });
+                const expected = helpers.cold(`${'a'.repeat(60)}|`, { a: [1, 2] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -77,10 +77,10 @@ describe('selectMostLikelyOffset', () => {
 
     describe('with sixty one tuples', () => {
         it(
-            'should emit the offset (devided by 1000) of the tuple with the smallest round trip time within the last sixty tuples',
+            'should emit the tuple with the smallest round trip time within the last sixty tuples',
             marbles((helpers) => {
                 const destination = helpers.cold(`a${'b'.repeat(60)}|`, { a: [1, 2], b: [3, 4] }).pipe(selectMostLikelyOffset());
-                const expected = helpers.cold(`${'a'.repeat(60)}b|`, { a: 1 / 1000, b: 3 / 1000 });
+                const expected = helpers.cold(`${'a'.repeat(60)}b|`, { a: [1, 2], b: [3, 4] });
 
                 helpers.expect(destination).toBeObservable(expected);
             })

@@ -1,7 +1,7 @@
 import { createEventTargetConstructor } from './factories/event-target-constructor';
 import { createEventTargetFactory } from './factories/event-target-factory';
 import { createSignalingFactory } from './factories/signaling-factory';
-import { createSortByHops } from './factories/sort-by-hops';
+import { createSortByHopsAndRoundTripTime } from './factories/sort-by-hops-and-round-trip-time';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
 import { compareHops } from './functions/compare-hops';
 import { wrapEventListener } from './functions/wrap-event-listener';
@@ -18,7 +18,11 @@ const timingProviderConstructor: TTimingProviderConstructor = createTimingProvid
     createEventTargetConstructor(createEventTargetFactory(window), wrapEventListener),
     performance,
     setTimeout,
-    createSortByHops(compareHops)
+    createSortByHopsAndRoundTripTime<[unknown, { hops: number[] }, number]>(
+        compareHops,
+        ([, { hops }]) => hops,
+        ([, , roundTripTime]) => roundTripTime
+    )
 );
 
 export { timingProviderConstructor as TimingProvider };

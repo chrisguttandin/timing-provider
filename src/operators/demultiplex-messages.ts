@@ -7,9 +7,9 @@ export const demultiplexMessages =
     (
         getClientId: () => string,
         timer: Observable<unknown>
-    ): OperatorFunction<TIncomingNegotiationEvent | ITerminationEvent, [string, Observable<TIncomingNegotiationEvent>]> =>
+    ): OperatorFunction<TIncomingNegotiationEvent | ITerminationEvent, [string, boolean, Observable<TIncomingNegotiationEvent>]> =>
     (source) =>
-        new Observable<[string, Observable<TIncomingNegotiationEvent>]>((observer) => {
+        new Observable<[string, boolean, Observable<TIncomingNegotiationEvent>]>((observer) => {
             const subjects = new Map<string, [Subject<TIncomingNegotiationEvent>, null] | [null, Subscription]>();
 
             const completeAll = () => {
@@ -21,6 +21,8 @@ export const demultiplexMessages =
                     }
                 });
             };
+
+            const isActive = (remoteClientId: string) => getClientId() < remoteClientId;
 
             return source.pipe(ultimately(() => completeAll())).subscribe({
                 complete(): void {
@@ -44,15 +46,13 @@ export const demultiplexMessages =
 
                         subjects.set(remoteClientId, [
                             null,
-                            timer
-                                .pipe(skip(getClientId() < remoteClientId ? 1 : 0), take(1))
-                                .subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
+                            timer.pipe(skip(isActive(remoteClientId) ? 1 : 0), take(1)).subscribe(() => subjects.delete(remoteClientId)) // tslint:disable-line:rxjs-no-nested-subscribe
                         ]);
                     } else if (subject === null && subscription === null) {
                         const newSubject = new Subject<TIncomingNegotiationEvent>();
 
                         subjects.set(remoteClientId, [newSubject, null]);
-                        observer.next([remoteClientId, newSubject.asObservable()]);
+                        observer.next([remoteClientId, isActive(remoteClientId), newSubject.asObservable()]);
                         newSubject.next(event);
                     } else if (subscription === null) {
                         subject.next(event);

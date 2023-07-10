@@ -57,7 +57,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
-                const expected = helpers.cold('a|', { a: [clientId, subject.asObservable()] });
+                const expected = helpers.cold('a|', { a: [clientId, false, subject.asObservable()] });
 
                 subject.next(event);
                 subject.complete();
@@ -72,7 +72,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(getClientId, timer),
-                    mergeMap(([, observable]) => observable)
+                    mergeMap(([, , observable]) => observable)
                 );
                 const expected = helpers.hot('a|', { a: event });
 
@@ -84,7 +84,7 @@ describe('demultiplexMessages', () => {
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
-                    next: ([, observable]) => {
+                    next: ([, , observable]) => {
                         observable.subscribe({
                             complete: done
                         });
@@ -108,7 +108,7 @@ describe('demultiplexMessages', () => {
                 )
                     .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
-                        next: ([, observable]) => {
+                        next: ([, , observable]) => {
                             observable.subscribe({
                                 complete: done
                             });
@@ -138,7 +138,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
-                const expected = helpers.cold('a|', { a: [clientId, subject.asObservable()] });
+                const expected = helpers.cold('a|', { a: [clientId, false, subject.asObservable()] });
 
                 subject.next(event);
                 subject.complete();
@@ -153,7 +153,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(getClientId, timer),
-                    mergeMap(([, observable]) => observable)
+                    mergeMap(([, , observable]) => observable)
                 );
                 const expected = helpers.hot('a|', { a: event });
 
@@ -165,7 +165,7 @@ describe('demultiplexMessages', () => {
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
-                    next: ([, observable]) => {
+                    next: ([, , observable]) => {
                         observable.subscribe({
                             complete: done
                         });
@@ -189,7 +189,7 @@ describe('demultiplexMessages', () => {
                 )
                     .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
-                        next: ([, observable]) => {
+                        next: ([, , observable]) => {
                             observable.subscribe({
                                 complete: done
                             });
@@ -219,7 +219,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
-                const expected = helpers.cold('a|', { a: [clientId, subject.asObservable()] });
+                const expected = helpers.cold('a|', { a: [clientId, false, subject.asObservable()] });
 
                 subject.next(event);
                 subject.complete();
@@ -234,7 +234,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(getClientId, timer),
-                    mergeMap(([, observable]) => observable)
+                    mergeMap(([, , observable]) => observable)
                 );
                 const expected = helpers.hot('a|', { a: event });
 
@@ -246,7 +246,7 @@ describe('demultiplexMessages', () => {
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
-                    next: ([, observable]) => {
+                    next: ([, , observable]) => {
                         observable.subscribe({
                             complete: done
                         });
@@ -270,7 +270,7 @@ describe('demultiplexMessages', () => {
                 )
                     .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
-                        next: ([, observable]) => {
+                        next: ([, , observable]) => {
                             observable.subscribe({
                                 complete: done
                             });
@@ -300,7 +300,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(demultiplexMessages(getClientId, timer));
                 const subject = new Subject();
-                const expected = helpers.cold('a|', { a: [clientId, subject.asObservable()] });
+                const expected = helpers.cold('a|', { a: [clientId, false, subject.asObservable()] });
 
                 subject.next(event);
                 subject.complete();
@@ -315,7 +315,7 @@ describe('demultiplexMessages', () => {
                 const timer = helpers.cold('a|');
                 const destination = helpers.cold('a|', { a: event }).pipe(
                     demultiplexMessages(getClientId, timer),
-                    mergeMap(([, observable]) => observable)
+                    mergeMap(([, , observable]) => observable)
                 );
                 const expected = helpers.hot('a|', { a: event });
 
@@ -327,7 +327,7 @@ describe('demultiplexMessages', () => {
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
-                    next: ([, observable]) => {
+                    next: ([, , observable]) => {
                         observable.subscribe({
                             complete: done
                         });
@@ -351,7 +351,7 @@ describe('demultiplexMessages', () => {
                 )
                     .pipe(demultiplexMessages(getClientId, EMPTY))
                     .subscribe({
-                        next: ([, observable]) => {
+                        next: ([, , observable]) => {
                             observable.subscribe({
                                 complete: done
                             });

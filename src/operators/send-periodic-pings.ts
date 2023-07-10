@@ -1,28 +1,28 @@
-import { MonoTypeOperatorFunction, Subject, finalize, ignoreElements, map, merge, takeUntil, tap, timer, withLatestFrom } from 'rxjs';
+import { EMPTY, OperatorFunction, Subject, endWith, ignoreElements, interval, map, startWith, switchAll, tap, withLatestFrom } from 'rxjs';
+import { TSendPeerToPeerMessageFunction } from '../types';
 
 export const sendPeriodicPings =
-    <Value>(
+    (
         localSentTimesSubject: Subject<[number, number[]]>,
-        now: () => number,
-        sendPing: (index: number) => void
-    ): MonoTypeOperatorFunction<Value> =>
-    (source) => {
-        const closeSubject = new Subject<null>();
+        now: () => number
+    ): OperatorFunction<[string, TSendPeerToPeerMessageFunction], never> =>
+    (source) =>
+        source.pipe(
+            map(([, send]) =>
+                interval(1000).pipe(
+                    startWith(0),
+                    map((_, index) => {
+                        send({ index, type: 'ping' });
 
-        return merge(
-            source.pipe(finalize(() => closeSubject.next(null))),
-            timer(0, 1000).pipe(
-                map((_, index) => {
-                    sendPing(index);
-
-                    return now();
-                }),
-                withLatestFrom(localSentTimesSubject),
-                tap(([localSentTime, [startIndex, localSentTimes]]) =>
-                    localSentTimesSubject.next([startIndex, [...localSentTimes, localSentTime]])
-                ),
-                ignoreElements(),
-                takeUntil(closeSubject)
-            )
+                        return now();
+                    }),
+                    withLatestFrom(localSentTimesSubject),
+                    tap(([localSentTime, [startIndex, localSentTimes]]) =>
+                        localSentTimesSubject.next([startIndex, [...localSentTimes, localSentTime]])
+                    ),
+                    ignoreElements()
+                )
+            ),
+            endWith(EMPTY),
+            switchAll()
         );
-    };
