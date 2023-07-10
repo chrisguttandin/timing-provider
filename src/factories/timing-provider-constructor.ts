@@ -7,7 +7,6 @@ import {
     catchError,
     concat,
     concatMap,
-    config,
     connect,
     defer,
     distinctUntilChanged,
