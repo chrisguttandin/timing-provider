@@ -104,6 +104,7 @@ export const createTimingProviderConstructor = (
 
         private _subscription: null | Subscription;
 
+        // tslint:disable-next-line:rxjs-no-exposed-subjects
         private _updateRequestsSubject: Subject<readonly [TExtendedTimingStateVector, null]>;
 
         private _vector: ITimingStateVector;
