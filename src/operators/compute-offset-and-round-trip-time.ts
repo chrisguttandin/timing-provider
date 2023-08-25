@@ -6,6 +6,6 @@ import { OperatorFunction, map } from 'rxjs';
  */
 export const computeOffsetAndRoundTripTime = (): OperatorFunction<readonly [number, number, number, number], [number, number]> =>
     map(([localSentTime, remoteReceivedTime, remoteSentTime, localReceivedTime]) => [
-        remoteReceivedTime - (localSentTime + remoteReceivedTime - remoteSentTime + localReceivedTime) / 2,
+        (remoteReceivedTime + remoteSentTime - localSentTime - localReceivedTime) / 2,
         localReceivedTime - localSentTime + remoteReceivedTime - remoteSentTime
     ]);
