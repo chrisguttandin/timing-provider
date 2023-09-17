@@ -10,7 +10,6 @@
     },
     "dependencies": {
         "@babel/runtime": "^7.22.10",
-        "linked": "^0.2.0",
         "rxjs": "^7.8.1",
         "rxjs-etc": "^10.6.2",
         "subscribable-things": "^2.1.23",
