@@ -9,19 +9,23 @@ import {
     finalize,
     from,
     ignoreElements,
+    iif,
     interval,
     merge,
     mergeMap,
     of,
     retry,
+    switchMap,
     take,
     takeUntil,
     tap,
     throwError,
+    timer,
     zip
 } from 'rxjs';
 import { inexorably } from 'rxjs-etc/operators';
 import { on } from 'subscribable-things';
+import { createBackoff } from '../functions/create-backoff';
 import { IErrorEvent, IPingEvent, IPongEvent, IUpdateEvent } from '../interfaces';
 import { TDataChannelTuple, TIncomingNegotiationEvent, TOutgoingSignalingEvent, TSendPeerToPeerMessageFunction } from '../types';
 import { echo } from './echo';
@@ -138,8 +142,24 @@ export const negotiateDataChannels =
 
                             return () => unsubscribeFunctions.forEach((unsubscribeFunction) => unsubscribeFunction());
                         };
+                        const [getBackoff, incrementBackoff] = createBackoff(1);
                         const subscribeToPeerConnection = () => {
+                            const subscription = merge(on(peerConnection, 'icecandidate'), on(peerConnection, 'icegatheringstatechange'))
+                                .pipe(
+                                    switchMap(() =>
+                                        iif(
+                                            () => peerConnection.iceGatheringState === 'gathering',
+                                            defer(() => timer(10_000 * getBackoff())),
+                                            EMPTY
+                                        )
+                                    )
+                                )
+                                .subscribe(() => {
+                                    incrementBackoff();
+                                    errorSubject.next(new Error('RTCPeerConnection seems to be stuck at iceGatheringState "gathering".'));
+                                });
                             const unsubscribeFunctions = [
+                                () => subscription.unsubscribe(),
                                 on(
                                     peerConnection,
                                     'connectionstatechange'
