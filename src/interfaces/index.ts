@@ -1,3 +1,4 @@
+export * from './array-event';
 export * from './candidate-event';
 export * from './check-event';
 export * from './closure-event';

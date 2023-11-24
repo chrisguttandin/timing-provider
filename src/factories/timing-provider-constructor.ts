@@ -274,6 +274,10 @@ export const createTimingProviderConstructor = (
                             ),
                             enforceOrder((event): event is IInitEvent => event.type === 'init'),
                             concatMap((event) => {
+                                if (event.type === 'array') {
+                                    return from(event.events);
+                                }
+
                                 if (event.type === 'init') {
                                     const {
                                         client: { id: clientId },
