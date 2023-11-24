@@ -298,6 +298,7 @@ export const createTimingProviderConstructor = (
                             negotiateDataChannels(
                                 () =>
                                     new RTCPeerConnection({
+                                        iceCandidatePoolSize: 1,
                                         iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
                                     }),
                                 sendSignalingEvent
