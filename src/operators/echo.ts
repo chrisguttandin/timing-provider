@@ -4,13 +4,16 @@ import {
     Observable,
     concat,
     dematerialize,
+    filter,
     ignoreElements,
     materialize,
     of,
+    startWith,
     switchMap,
     takeWhile,
     tap
 } from 'rxjs';
+import { isNotNullish } from 'rxjs-etc';
 
 export const echo =
     <T, U>(
@@ -21,11 +24,15 @@ export const echo =
     (source) =>
         source.pipe(
             materialize(),
+            startWith(null),
             switchMap((notification) =>
                 concat(
                     of(notification),
-                    notification.kind === 'N' ? timer.pipe(takeWhile(predicate), tap(callback), ignoreElements()) : EMPTY
+                    notification === null || notification.kind === 'N'
+                        ? timer.pipe(takeWhile(predicate), tap(callback), ignoreElements())
+                        : EMPTY
                 )
             ),
+            filter(isNotNullish),
             dematerialize()
         );
