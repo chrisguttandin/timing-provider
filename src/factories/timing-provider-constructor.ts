@@ -63,6 +63,7 @@ import {
     TSendPeerToPeerMessageFunction,
     TTimingProviderConstructor
 } from '../types';
+import type { createRTCPeerConnectionFactory } from './rtc-peer-connection-factory';
 import type { createSignalingFactory } from './signaling-factory';
 import type { createSortByHopsAndRoundTripTime } from './sort-by-hops-and-round-trip-time';
 
@@ -70,6 +71,7 @@ const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
 
 export const createTimingProviderConstructor = (
+    createRTCPeerConnection: ReturnType<typeof createRTCPeerConnectionFactory>,
     createSignaling: ReturnType<typeof createSignalingFactory>,
     eventTargetConstructor: TEventTargetConstructor,
     performance: Window['performance'],
@@ -299,14 +301,7 @@ export const createTimingProviderConstructor = (
                                 return of(event);
                             }),
                             demultiplexMessages(() => this._clientId, timer(10_000)),
-                            negotiateDataChannels(
-                                () =>
-                                    new RTCPeerConnection({
-                                        iceCandidatePoolSize: 1,
-                                        iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]
-                                    }),
-                                sendSignalingEvent
-                            )
+                            negotiateDataChannels(createRTCPeerConnection, sendSignalingEvent)
                         );
                     })
                 ).pipe(

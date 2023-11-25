@@ -1,5 +1,6 @@
 import { createEventTargetConstructor } from './factories/event-target-constructor';
 import { createEventTargetFactory } from './factories/event-target-factory';
+import { createRTCPeerConnectionFactory } from './factories/rtc-peer-connection-factory';
 import { createSignalingFactory } from './factories/signaling-factory';
 import { createSortByHopsAndRoundTripTime } from './factories/sort-by-hops-and-round-trip-time';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
@@ -14,9 +15,11 @@ import { TTimingProviderConstructor } from './types';
  */
 export * from './types/index';
 
+const window = createWindow();
 const timingProviderConstructor: TTimingProviderConstructor = createTimingProviderConstructor(
+    createRTCPeerConnectionFactory(window),
     createSignalingFactory((url) => new WebSocket(url)),
-    createEventTargetConstructor(createEventTargetFactory(createWindow()), wrapEventListener),
+    createEventTargetConstructor(createEventTargetFactory(window), wrapEventListener),
     performance,
     setTimeout,
     createSortByHopsAndRoundTripTime<[unknown, { hops: number[] }, number]>(
