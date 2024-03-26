@@ -2,19 +2,11 @@ import { combineAsTuple } from '../../../src/operators/combine-as-tuple';
 import { marbles } from 'rxjs-marbles';
 
 describe('combineAsTuple', () => {
-    let firstElement;
-    let secondElement;
-
-    beforeEach(() => {
-        firstElement = 'a fake first element';
-        secondElement = 'a fake second element';
-    });
-
     describe('without any value', () => {
         it(
             'should mirror an empty observable',
             marbles((helpers) => {
-                const destination = helpers.cold('|').pipe(combineAsTuple([firstElement, secondElement]));
+                const destination = helpers.cold('|').pipe(combineAsTuple());
                 const expected = helpers.cold('(|)');
 
                 helpers.expect(destination).toBeObservable(expected);
@@ -27,7 +19,7 @@ describe('combineAsTuple', () => {
             'should mirror an error observable',
             marbles((helpers) => {
                 const err = new Error('a fake error');
-                const destination = helpers.cold('#', null, err).pipe(combineAsTuple([firstElement, secondElement]));
+                const destination = helpers.cold('#', null, err).pipe(combineAsTuple());
                 const expected = helpers.cold('(#)', null, err);
 
                 helpers.expect(destination).toBeObservable(expected);
@@ -39,9 +31,9 @@ describe('combineAsTuple', () => {
         it(
             'should emit an updated tuple',
             marbles((helpers) => {
-                const newFirstElement = 'a fake new first element';
-                const destination = helpers.cold('a---|', { a: [0, newFirstElement] }).pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('a---|', { a: [newFirstElement, secondElement] });
+                const firstElement = Symbol('firstElement');
+                const destination = helpers.cold('a---|', { a: [0, firstElement] }).pipe(combineAsTuple());
+                const expected = helpers.cold('----|');
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -52,9 +44,9 @@ describe('combineAsTuple', () => {
         it(
             'should emit an updated tuple',
             marbles((helpers) => {
-                const newSecondElement = 'a fake new second element';
-                const destination = helpers.cold('a---|', { a: [1, newSecondElement] }).pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('a---|', { a: [firstElement, newSecondElement] });
+                const secondElement = Symbol('secondElement');
+                const destination = helpers.cold('a---|', { a: [1, secondElement] }).pipe(combineAsTuple());
+                const expected = helpers.cold('----|');
 
                 helpers.expect(destination).toBeObservable(expected);
             })
@@ -63,16 +55,13 @@ describe('combineAsTuple', () => {
 
     describe('with a single value to replace the first element and the second element', () => {
         it(
-            'should emit updated tuples',
+            'should emit an updated tuple',
             marbles((helpers) => {
-                const newFirstElement = 'a fake new first element';
-                const newSecondElement = 'a fake new second element';
-                const destination = helpers
-                    .cold('a---b|', { a: [0, newFirstElement], b: [1, newSecondElement] })
-                    .pipe(combineAsTuple([firstElement, secondElement]));
-                const expected = helpers.cold('a---b|', {
-                    a: [newFirstElement, secondElement],
-                    b: [newFirstElement, newSecondElement]
+                const firstElement = Symbol('firstElement');
+                const secondElement = Symbol('secondElement');
+                const destination = helpers.cold('a---b|', { a: [0, firstElement], b: [1, secondElement] }).pipe(combineAsTuple());
+                const expected = helpers.cold('----a|', {
+                    a: [firstElement, secondElement]
                 });
 
                 helpers.expect(destination).toBeObservable(expected);

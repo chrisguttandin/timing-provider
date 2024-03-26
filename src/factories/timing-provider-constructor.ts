@@ -473,7 +473,7 @@ export const createTimingProviderConstructor = (
                                                         map((extendedVector) => [0, extendedVector] as const)
                                                     );
                                                 }),
-                                                combineAsTuple<null | TExtendedTimingStateVector, [number, number]>([null, [0, 0]]),
+                                                combineAsTuple<null | TExtendedTimingStateVector, [number, number]>(),
                                                 distinctUntilChanged(
                                                     ([vectorA, [offsetA, roundTripTimeA]], [vectorB, [offsetB, roundTripTimeB]]) =>
                                                         vectorA === vectorB && offsetA === offsetB && roundTripTimeA === roundTripTimeB
