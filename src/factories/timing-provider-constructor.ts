@@ -33,9 +33,7 @@ import {
     ITimingStateVector,
     TConnectionState,
     TEventHandler,
-    TTimingStateVectorUpdate,
-    filterTimingStateVectorUpdate,
-    translateTimingStateVector
+    TTimingStateVectorUpdate
 } from 'timing-object';
 import { findSendPeerToPeerMessageFunction } from '../functions/find-send-peer-to-peer-message-function';
 import { isBooleanTuple } from '../functions/is-boolean-tuple';
@@ -66,6 +64,7 @@ import {
 import type { createRTCPeerConnectionFactory } from './rtc-peer-connection-factory';
 import type { createSignalingFactory } from './signaling-factory';
 import type { createSortByHopsAndRoundTripTime } from './sort-by-hops-and-round-trip-time';
+import type { createUpdateTimingStateVector } from './update-timing-state-vector';
 
 const SUENC_URL = 'wss://matchmaker.suenc.io';
 const PROVIDER_ID_REGEX = /^[\dA-Za-z]{20}$/;
@@ -76,7 +75,8 @@ export const createTimingProviderConstructor = (
     eventTargetConstructor: TEventTargetConstructor,
     performance: Window['performance'],
     setTimeout: Window['setTimeout'],
-    sortByHopsAndRoundTripTime: ReturnType<typeof createSortByHopsAndRoundTripTime<[unknown, { hops: number[] }, number]>>
+    sortByHopsAndRoundTripTime: ReturnType<typeof createSortByHopsAndRoundTripTime<[unknown, { hops: number[] }, number]>>,
+    updateTimingStateVector: ReturnType<typeof createUpdateTimingStateVector>
 ): TTimingProviderConstructor => {
     return class TimingProvider extends eventTargetConstructor<ITimingProviderEventMap> implements ITimingProvider {
         private _clientId: string;
@@ -239,15 +239,18 @@ export const createTimingProviderConstructor = (
                 return Promise.reject(new Error("The timingProvider is destroyed and can't be updated."));
             }
 
-            this._updateRequestsSubject.next([
-                {
-                    ...translateTimingStateVector(this._vector, performance.now() / 1000 - this._vector.timestamp),
-                    ...filterTimingStateVectorUpdate(newVector),
-                    hops: [],
-                    version: this._version + 1
-                },
-                null
-            ]);
+            const updatedVector = updateTimingStateVector(this._vector, newVector);
+
+            if (updatedVector !== null) {
+                this._updateRequestsSubject.next([
+                    {
+                        ...updatedVector,
+                        hops: [],
+                        version: this._version + 1
+                    },
+                    null
+                ]);
+            }
 
             return Promise.resolve();
         }

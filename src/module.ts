@@ -1,9 +1,11 @@
+import { filterTimingStateVectorUpdate, translateTimingStateVector } from 'timing-object';
 import { createEventTargetConstructor } from './factories/event-target-constructor';
 import { createEventTargetFactory } from './factories/event-target-factory';
 import { createRTCPeerConnectionFactory } from './factories/rtc-peer-connection-factory';
 import { createSignalingFactory } from './factories/signaling-factory';
 import { createSortByHopsAndRoundTripTime } from './factories/sort-by-hops-and-round-trip-time';
 import { createTimingProviderConstructor } from './factories/timing-provider-constructor';
+import { createUpdateTimingStateVector } from './factories/update-timing-state-vector';
 import { createWindow } from './factories/window';
 import { compareHops } from './functions/compare-hops';
 import { wrapEventListener } from './functions/wrap-event-listener';
@@ -26,7 +28,8 @@ const timingProviderConstructor: TTimingProviderConstructor = createTimingProvid
         compareHops,
         ([, { hops }]) => hops,
         ([, , roundTripTime]) => roundTripTime
-    )
+    ),
+    createUpdateTimingStateVector(filterTimingStateVectorUpdate, performance, translateTimingStateVector)
 );
 
 export { timingProviderConstructor as TimingProvider };
