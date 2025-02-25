@@ -47,7 +47,7 @@
         "mocha": "^10.8.2",
         "prettier": "^3.5.2",
         "rimraf": "^6.0.1",
-        "rollup": "^4.30.1",
+        "rollup": "^4.34.8",
         "rxjs-marbles": "^7.0.1",
         "sinon": "^17.0.2",
         "sinon-chai": "^3.7.0",
