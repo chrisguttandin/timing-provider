@@ -449,6 +449,8 @@ export const negotiateDataChannels =
                                         } else {
                                             const errorEvent = <const>{
                                                 client: { id: clientId },
+                                                message: err.message,
+                                                name: err.name,
                                                 type: 'error',
                                                 version
                                             };
