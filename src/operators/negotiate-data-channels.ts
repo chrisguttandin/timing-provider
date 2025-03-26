@@ -175,8 +175,15 @@ export const negotiateDataChannels =
                                 on(
                                     peerConnection,
                                     'icecandidateerror'
-                                )(() =>
-                                    errorSubject.next(new Error('RTCPeerConnection fired unexpected event of type "icecandidateerror".'))
+                                )(({ address, errorCode, errorText, port, url }) =>
+                                    sendSignalingEvent({
+                                        address,
+                                        errorCode,
+                                        errorText,
+                                        port,
+                                        type: 'icecandidateerror',
+                                        url
+                                    })
                                 ),
                                 on(
                                     peerConnection,

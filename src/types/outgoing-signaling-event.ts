@@ -1,3 +1,9 @@
-import { ICandidateEvent, ICheckEvent, IDescriptionEvent, IErrorEvent, ISummaryEvent } from '../interfaces';
+import { ICandidateEvent, ICheckEvent, IDescriptionEvent, IErrorEvent, IIceCandidateErrorEvent, ISummaryEvent } from '../interfaces';
 
-export type TOutgoingSignalingEvent = ICandidateEvent | ICheckEvent | IDescriptionEvent | IErrorEvent | ISummaryEvent;
+export type TOutgoingSignalingEvent =
+    | ICandidateEvent
+    | ICheckEvent
+    | IDescriptionEvent
+    | IErrorEvent
+    | IIceCandidateErrorEvent
+    | ISummaryEvent;
