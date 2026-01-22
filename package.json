@@ -41,7 +41,7 @@
         "karma-webpack": "^5.0.1",
         "lint-staged": "^16.2.7",
         "mocha": "^11.7.5",
-        "prettier": "^3.8.0",
+        "prettier": "^3.8.1",
         "rimraf": "^6.1.2",
         "rollup": "^4.55.1",
         "rxjs-marbles": "^7.0.1",
