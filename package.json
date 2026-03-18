@@ -42,7 +42,7 @@
         "lint-staged": "^16.4.0",
         "mocha": "^11.7.5",
         "prettier": "^3.8.1",
-        "rimraf": "^6.1.2",
+        "rimraf": "^6.1.3",
         "rollup": "^4.57.1",
         "rxjs-marbles": "^7.0.1",
         "sinon": "^17.0.2",
