@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { compareHops } from '../../../src/functions/compare-hops';
 
 describe('compareHops()', () => {

@@ -1,3 +1,4 @@
+import { describe, it } from 'vitest';
 import { combineAsTuple } from '../../../src/operators/combine-as-tuple';
 import { marbles } from 'rxjs-marbles';
 

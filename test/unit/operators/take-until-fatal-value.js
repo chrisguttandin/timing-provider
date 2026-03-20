@@ -1,5 +1,5 @@
 import { EMPTY, NEVER, concat, from, mergeMap, of, throwError } from 'rxjs';
-import { spy, stub } from 'sinon';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { marbles } from 'rxjs-marbles';
 import { takeUntilFatalValue } from '../../../src/operators/take-until-fatal-value';
 
@@ -8,8 +8,8 @@ describe('takeUntilFatalValue', () => {
     let isFatalValue;
 
     beforeEach(() => {
-        handleFatalValue = spy();
-        isFatalValue = stub();
+        handleFatalValue = vi.fn();
+        isFatalValue = vi.fn();
     });
 
     describe('without any value', () => {
@@ -23,28 +23,34 @@ describe('takeUntilFatalValue', () => {
             })
         );
 
-        it('should not call isFatalValue()', (done) => {
+        it('should not call isFatalValue()', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = EMPTY.pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe({
                 complete: () => {
                     expect(isFatalValue).to.have.not.been.called;
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
 
-        it('should not call handleFatalValue()', (done) => {
+        it('should not call handleFatalValue()', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = EMPTY.pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe({
                 complete: () => {
                     expect(handleFatalValue).to.have.not.been.called;
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
     });
 
@@ -63,7 +69,8 @@ describe('takeUntilFatalValue', () => {
             })
         );
 
-        it('should not call isFatalValue()', (done) => {
+        it('should not call isFatalValue()', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = of(error).pipe(
                 mergeMap((err) => throwError(() => err)),
                 takeUntilFatalValue(isFatalValue, handleFatalValue)
@@ -75,12 +82,15 @@ describe('takeUntilFatalValue', () => {
 
                     expect(isFatalValue).to.have.not.been.called;
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
 
-        it('should not call handleFatalValue()', (done) => {
+        it('should not call handleFatalValue()', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = of(error).pipe(
                 mergeMap((err) => throwError(() => err)),
                 takeUntilFatalValue(isFatalValue, handleFatalValue)
@@ -92,9 +102,11 @@ describe('takeUntilFatalValue', () => {
 
                     expect(handleFatalValue).to.have.not.been.called;
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
     });
 
@@ -104,7 +116,7 @@ describe('takeUntilFatalValue', () => {
         beforeEach(() => {
             regularValue = 'a regular value';
 
-            isFatalValue.returns(false);
+            isFatalValue.mockReturnValue(false);
         });
 
         it(
@@ -117,25 +129,31 @@ describe('takeUntilFatalValue', () => {
             })
         );
 
-        it('should call isFatalValue() with the regular value', (done) => {
+        it('should call isFatalValue() with the regular value', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = concat(of(regularValue), NEVER).pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe(() => {
                 expect(isFatalValue).to.have.been.calledTwice;
-                expect(isFatalValue).to.have.been.calledWithExactly(regularValue, 0);
+                expect(isFatalValue).to.have.been.calledWith(regularValue, 0);
 
-                done();
+                resolve();
             });
+
+            return promise;
         });
 
-        it('should not call handleFatalValue()', (done) => {
+        it('should not call handleFatalValue()', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = concat(of(regularValue), NEVER).pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe(() => {
                 expect(handleFatalValue).to.have.not.been.called;
 
-                done();
+                resolve();
             });
+
+            return promise;
         });
 
         describe('with a subsequent fatal value', () => {
@@ -144,7 +162,7 @@ describe('takeUntilFatalValue', () => {
             beforeEach(() => {
                 fatalValue = 'a fatal value';
 
-                isFatalValue.callsFake((value) => value === fatalValue);
+                isFatalValue.mockImplementation((value) => value === fatalValue);
             });
 
             it(
@@ -159,7 +177,8 @@ describe('takeUntilFatalValue', () => {
                 })
             );
 
-            it('should call isFatalValue() with the regular and and the fatal value', (done) => {
+            it('should call isFatalValue() with the regular and and the fatal value', () => {
+                const { promise, resolve } = Promise.withResolvers();
                 const destination = concat(from([regularValue, fatalValue]), NEVER).pipe(
                     takeUntilFatalValue(isFatalValue, handleFatalValue)
                 );
@@ -167,15 +186,18 @@ describe('takeUntilFatalValue', () => {
                 destination.subscribe({
                     complete: () => {
                         expect(isFatalValue).to.have.been.calledThrice;
-                        expect(isFatalValue).to.have.been.calledWithExactly(regularValue, 0);
-                        expect(isFatalValue).to.have.been.calledWithExactly(fatalValue, 1);
+                        expect(isFatalValue).to.have.been.calledWith(regularValue, 0);
+                        expect(isFatalValue).to.have.been.calledWith(fatalValue, 1);
 
-                        done();
+                        resolve();
                     }
                 });
+
+                return promise;
             });
 
-            it('should call handleFatalValue() with the fatal value', (done) => {
+            it('should call handleFatalValue() with the fatal value', () => {
+                const { promise, resolve } = Promise.withResolvers();
                 const destination = concat(from([regularValue, fatalValue]), NEVER).pipe(
                     takeUntilFatalValue(isFatalValue, handleFatalValue)
                 );
@@ -183,11 +205,13 @@ describe('takeUntilFatalValue', () => {
                 destination.subscribe({
                     complete: () => {
                         expect(handleFatalValue).to.have.been.calledOnce;
-                        expect(handleFatalValue).to.have.been.calledWithExactly(fatalValue);
+                        expect(handleFatalValue).to.have.been.calledWith(fatalValue);
 
-                        done();
+                        resolve();
                     }
                 });
+
+                return promise;
             });
         });
     });
@@ -198,7 +222,7 @@ describe('takeUntilFatalValue', () => {
         beforeEach(() => {
             fatalValue = 'a fatal value';
 
-            isFatalValue.returns(true);
+            isFatalValue.mockReturnValue(true);
         });
 
         it(
@@ -211,30 +235,36 @@ describe('takeUntilFatalValue', () => {
             })
         );
 
-        it('should call isFatalValue() with the fatal value', (done) => {
+        it('should call isFatalValue() with the fatal value', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = concat(of(fatalValue), NEVER).pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe({
                 complete: () => {
                     expect(isFatalValue).to.have.been.calledOnce;
-                    expect(isFatalValue).to.have.been.calledWithExactly(fatalValue, 0);
+                    expect(isFatalValue).to.have.been.calledWith(fatalValue, 0);
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
 
-        it('should call handleFatalValue() with the fatal value', (done) => {
+        it('should call handleFatalValue() with the fatal value', () => {
+            const { promise, resolve } = Promise.withResolvers();
             const destination = concat(of(fatalValue), NEVER).pipe(takeUntilFatalValue(isFatalValue, handleFatalValue));
 
             destination.subscribe({
                 complete: () => {
                     expect(handleFatalValue).to.have.been.calledOnce;
-                    expect(handleFatalValue).to.have.been.calledWithExactly(fatalValue);
+                    expect(handleFatalValue).to.have.been.calledWith(fatalValue);
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
 
         describe('with a subsequent regular value', () => {
@@ -243,7 +273,7 @@ describe('takeUntilFatalValue', () => {
             beforeEach(() => {
                 regularValue = 'a regular value';
 
-                isFatalValue.callsFake((value) => value === fatalValue);
+                isFatalValue.mockImplementation((value) => value === fatalValue);
             });
 
             it(
@@ -258,7 +288,8 @@ describe('takeUntilFatalValue', () => {
                 })
             );
 
-            it('should call isFatalValue() with the fatal value', (done) => {
+            it('should call isFatalValue() with the fatal value', () => {
+                const { promise, resolve } = Promise.withResolvers();
                 const destination = concat(from([fatalValue, regularValue]), NEVER).pipe(
                     takeUntilFatalValue(isFatalValue, handleFatalValue)
                 );
@@ -266,14 +297,17 @@ describe('takeUntilFatalValue', () => {
                 destination.subscribe({
                     complete: () => {
                         expect(isFatalValue).to.have.been.calledOnce;
-                        expect(isFatalValue).to.have.been.calledWithExactly(fatalValue, 0);
+                        expect(isFatalValue).to.have.been.calledWith(fatalValue, 0);
 
-                        done();
+                        resolve();
                     }
                 });
+
+                return promise;
             });
 
-            it('should call handleFatalValue() with the fatal value', (done) => {
+            it('should call handleFatalValue() with the fatal value', () => {
+                const { promise, resolve } = Promise.withResolvers();
                 const destination = concat(from([fatalValue, regularValue]), NEVER).pipe(
                     takeUntilFatalValue(isFatalValue, handleFatalValue)
                 );
@@ -281,11 +315,13 @@ describe('takeUntilFatalValue', () => {
                 destination.subscribe({
                     complete: () => {
                         expect(handleFatalValue).to.have.been.calledOnce;
-                        expect(handleFatalValue).to.have.been.calledWithExactly(fatalValue);
+                        expect(handleFatalValue).to.have.been.calledWith(fatalValue);
 
-                        done();
+                        resolve();
                     }
                 });
+
+                return promise;
             });
         });
     });

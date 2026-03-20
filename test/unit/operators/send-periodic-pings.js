@@ -1,5 +1,5 @@
 import { BehaviorSubject, EMPTY, from, of } from 'rxjs';
-import { spy, stub } from 'sinon';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendPeriodicPings } from '../../../src/operators/send-periodic-pings';
 
 describe('sendPeriodicPings', () => {
@@ -9,98 +9,125 @@ describe('sendPeriodicPings', () => {
 
     beforeEach(() => {
         localSentTimesSubject = new BehaviorSubject([0, []]);
-        now = stub();
-        send = spy();
+        now = vi.fn();
+        send = vi.fn();
     });
 
     describe('with no value', () => {
-        it('should not emit any value', (done) => {
+        it('should not emit any value', () => {
+            const { promise, reject, resolve } = Promise.withResolvers();
+
             EMPTY.pipe(sendPeriodicPings(localSentTimesSubject, now)).subscribe({
                 complete() {
-                    done();
+                    resolve();
                 },
                 error() {
-                    done(new Error('This should never be called.'));
+                    reject(new Error('This should never be called.'));
                 },
                 next() {
-                    done(new Error('This should never be called.'));
+                    reject(new Error('This should never be called.'));
                 }
             });
+
+            return promise;
         });
 
-        it('should not call send()', (done) => {
+        it('should not call send()', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             EMPTY.pipe(sendPeriodicPings(localSentTimesSubject, now)).subscribe({
                 complete() {
                     expect(send).to.have.not.been.called;
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
 
-        it('should not update the stored pings', (done) => {
+        it('should not update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             EMPTY.pipe(sendPeriodicPings(localSentTimesSubject, now)).subscribe({
                 complete() {
                     expect(localSentTimesSubject.getValue()).to.deep.equal([0, []]);
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
     });
 
     describe('with one value', () => {
         beforeEach(() => {
-            now.returns(0.123456789);
+            now.mockReturnValue(0.123456789);
         });
 
-        it('should not emit any value', (done) => {
+        it('should not emit any value', () => {
+            const { promise, reject, resolve } = Promise.withResolvers();
+
             of([, send])
                 .pipe(sendPeriodicPings(localSentTimesSubject, now))
                 .subscribe({
                     complete() {
-                        done();
+                        resolve();
                     },
                     error() {
-                        done(new Error('This should never be called.'));
+                        reject(new Error('This should never be called.'));
                     },
                     next() {
-                        done(new Error('This should never be called.'));
+                        reject(new Error('This should never be called.'));
                     }
                 });
+
+            return promise;
         });
 
-        it('should call send()', (done) => {
+        it('should call send()', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of([, send])
                 .pipe(sendPeriodicPings(localSentTimesSubject, now))
                 .subscribe({
                     complete() {
-                        expect(send).to.have.been.calledOnce.and.calledWithExactly({ index: 0, type: 'ping' });
+                        expect(send).to.have.been.calledOnce.and.calledWith({ index: 0, type: 'ping' });
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
 
-        it('should update the stored pings', (done) => {
+        it('should update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of([, send])
                 .pipe(sendPeriodicPings(localSentTimesSubject, now))
                 .subscribe({
                     complete() {
                         expect(localSentTimesSubject.getValue()).to.deep.equal([0, [0.123456789]]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 
     describe('with two values', () => {
         beforeEach(() => {
-            now.onFirstCall().returns(0.123456789).onSecondCall().returns(1.23456789);
+            now.mockReturnValueOnce(0.123456789);
+            now.mockReturnValueOnce(1.23456789);
         });
 
-        it('should not emit any value', (done) => {
+        it('should not emit any value', () => {
+            const { promise, reject, resolve } = Promise.withResolvers();
+
             from([
                 [, send],
                 [, send]
@@ -108,18 +135,22 @@ describe('sendPeriodicPings', () => {
                 .pipe(sendPeriodicPings(localSentTimesSubject, now))
                 .subscribe({
                     complete() {
-                        done();
+                        resolve();
                     },
                     error() {
-                        done(new Error('This should never be called.'));
+                        reject(new Error('This should never be called.'));
                     },
                     next() {
-                        done(new Error('This should never be called.'));
+                        reject(new Error('This should never be called.'));
                     }
                 });
+
+            return promise;
         });
 
-        it('should call send()', (done) => {
+        it('should call send()', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             from([
                 [, send],
                 [, send]
@@ -128,15 +159,19 @@ describe('sendPeriodicPings', () => {
                 .subscribe({
                     complete() {
                         expect(send).to.have.been.calledTwice;
-                        expect(send.getCall(0)).to.have.been.calledWithExactly({ index: 0, type: 'ping' });
-                        expect(send.getCall(1)).to.have.been.calledWithExactly({ index: 0, type: 'ping' });
+                        expect(send.mock.calls[0]).to.deep.equal([{ index: 0, type: 'ping' }]);
+                        expect(send.mock.calls[1]).to.deep.equal([{ index: 0, type: 'ping' }]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
 
-        it('should update the stored pings', (done) => {
+        it('should update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             from([
                 [, send],
                 [, send]
@@ -146,9 +181,11 @@ describe('sendPeriodicPings', () => {
                     complete() {
                         expect(localSentTimesSubject.getValue()).to.deep.equal([0, [0.123456789, 1.23456789]]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 });

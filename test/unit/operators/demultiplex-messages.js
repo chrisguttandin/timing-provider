@@ -1,4 +1,5 @@
 import { EMPTY, NEVER, Subject, concat, from, interval, mergeMap, of, takeUntil } from 'rxjs';
+import { beforeEach, describe, it } from 'vitest';
 import { demultiplexMessages } from '../../../src/operators/demultiplex-messages';
 import { marbles } from 'rxjs-marbles';
 
@@ -80,20 +81,26 @@ describe('demultiplexMessages', () => {
             })
         );
 
-        it('should complete the observable when unsubscribing', (done) => {
+        it('should complete the observable when unsubscribing', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, , observable]) => {
                         observable.subscribe({
-                            complete: done
+                            complete: () => resolve()
                         });
                     }
                 });
+
+            return promise;
         });
 
         describe('with a subsequent termination event', () => {
-            it('should complete the observable', (done) => {
+            it('should complete the observable', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
                 concat(
                     from([
                         event,
@@ -110,10 +117,12 @@ describe('demultiplexMessages', () => {
                     .subscribe({
                         next: ([, , observable]) => {
                             observable.subscribe({
-                                complete: done
+                                complete: () => resolve()
                             });
                         }
                     });
+
+                return promise;
             });
         });
     });
@@ -161,20 +170,26 @@ describe('demultiplexMessages', () => {
             })
         );
 
-        it('should complete the observable when unsubscribing', (done) => {
+        it('should complete the observable when unsubscribing', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, , observable]) => {
                         observable.subscribe({
-                            complete: done
+                            complete: () => resolve()
                         });
                     }
                 });
+
+            return promise;
         });
 
         describe('with a subsequent termination event', () => {
-            it('should complete the observable', (done) => {
+            it('should complete the observable', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
                 concat(
                     from([
                         event,
@@ -191,10 +206,12 @@ describe('demultiplexMessages', () => {
                     .subscribe({
                         next: ([, , observable]) => {
                             observable.subscribe({
-                                complete: done
+                                complete: () => resolve()
                             });
                         }
                     });
+
+                return promise;
             });
         });
     });
@@ -242,20 +259,26 @@ describe('demultiplexMessages', () => {
             })
         );
 
-        it('should complete the observable when unsubscribing', (done) => {
+        it('should complete the observable when unsubscribing', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, , observable]) => {
                         observable.subscribe({
-                            complete: done
+                            complete: () => resolve()
                         });
                     }
                 });
+
+            return promise;
         });
 
         describe('with a subsequent termination event', () => {
-            it('should complete the observable', (done) => {
+            it('should complete the observable', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
                 concat(
                     from([
                         event,
@@ -272,10 +295,12 @@ describe('demultiplexMessages', () => {
                     .subscribe({
                         next: ([, , observable]) => {
                             observable.subscribe({
-                                complete: done
+                                complete: () => resolve()
                             });
                         }
                     });
+
+                return promise;
             });
         });
     });
@@ -323,20 +348,26 @@ describe('demultiplexMessages', () => {
             })
         );
 
-        it('should complete the observable when unsubscribing', (done) => {
+        it('should complete the observable when unsubscribing', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             concat(of(event), NEVER)
                 .pipe(demultiplexMessages(getClientId, EMPTY), takeUntil(interval(1)))
                 .subscribe({
                     next: ([, , observable]) => {
                         observable.subscribe({
-                            complete: done
+                            complete: () => resolve()
                         });
                     }
                 });
+
+            return promise;
         });
 
         describe('with a subsequent termination event', () => {
-            it('should complete the observable', (done) => {
+            it('should complete the observable', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
                 concat(
                     from([
                         event,
@@ -353,10 +384,12 @@ describe('demultiplexMessages', () => {
                     .subscribe({
                         next: ([, , observable]) => {
                             observable.subscribe({
-                                complete: done
+                                complete: () => resolve()
                             });
                         }
                     });
+
+                return promise;
             });
         });
     });

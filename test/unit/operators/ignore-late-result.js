@@ -1,6 +1,6 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalize } from 'rxjs';
 import { ignoreLateResult } from '../../../src/operators/ignore-late-result';
-import { spy } from 'sinon';
 
 describe('ignoreLateResult', () => {
     let complete;
@@ -8,30 +8,30 @@ describe('ignoreLateResult', () => {
     let next;
 
     beforeEach(() => {
-        complete = spy();
-        error = spy();
-        next = spy();
+        complete = vi.fn();
+        error = vi.fn();
+        next = vi.fn();
     });
 
     describe('with a promise that resolves a value', () => {
-        let promise;
         let value;
 
         beforeEach(() => {
             value = 'a fake value';
-            promise = Promise.resolve(value);
         });
 
         describe('with a subscription that is not yet completed when the promise settles', () => {
-            it('should emit the value', (done) => {
-                ignoreLateResult(promise)
+            it('should emit the value', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
+                ignoreLateResult(Promise.resolve(value))
                     .pipe(
                         finalize(() => {
-                            expect(complete).to.have.been.calledOnceWithExactly();
+                            expect(complete).to.have.been.calledOnceWith();
                             expect(error).to.have.not.been.called;
-                            expect(next).to.have.been.calledOnceWithExactly(value);
+                            expect(next).to.have.been.calledOnceWith(value);
 
-                            done();
+                            resolve();
                         })
                     )
                     .subscribe({
@@ -39,19 +39,23 @@ describe('ignoreLateResult', () => {
                         error,
                         next
                     });
+
+                return promise;
             });
         });
 
         describe('with a subscription that is already completed when the promise settles', () => {
-            it('should not emit or throw anything', (done) => {
-                ignoreLateResult(promise)
+            it('should not emit or throw anything', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
+                ignoreLateResult(Promise.resolve(value))
                     .pipe(
                         finalize(() => {
                             expect(complete).to.have.not.been.called;
                             expect(error).to.have.not.been.called;
                             expect(next).to.have.not.been.called;
 
-                            done();
+                            resolve();
                         })
                     )
                     .subscribe({
@@ -60,29 +64,31 @@ describe('ignoreLateResult', () => {
                         next
                     })
                     .unsubscribe();
+
+                return promise;
             });
         });
     });
 
     describe('with a promise that rejects an error', () => {
         let err;
-        let promise;
 
         beforeEach(() => {
             err = new Error('a fake error');
-            promise = Promise.reject(err);
         });
 
         describe('with a subscription that is not yet completed when the promise settles', () => {
-            it('should throw the error', (done) => {
-                ignoreLateResult(promise)
+            it('should throw the error', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
+                ignoreLateResult(Promise.reject(err))
                     .pipe(
                         finalize(() => {
                             expect(complete).to.have.not.been.called;
-                            expect(error).to.have.been.calledOnceWithExactly(err);
+                            expect(error).to.have.been.calledOnceWith(err);
                             expect(next).to.have.not.been.called;
 
-                            done();
+                            resolve();
                         })
                     )
                     .subscribe({
@@ -90,19 +96,23 @@ describe('ignoreLateResult', () => {
                         error,
                         next
                     });
+
+                return promise;
             });
         });
 
         describe('with a subscription that is already completed when the promise settles', () => {
-            it('should not emit or throw anything', (done) => {
-                ignoreLateResult(promise)
+            it('should not emit or throw anything', () => {
+                const { promise, resolve } = Promise.withResolvers();
+
+                ignoreLateResult(Promise.reject(err))
                     .pipe(
                         finalize(() => {
                             expect(complete).to.have.not.been.called;
                             expect(error).to.have.not.been.called;
                             expect(next).to.have.not.been.called;
 
-                            done();
+                            resolve();
                         })
                     )
                     .subscribe({
@@ -111,6 +121,8 @@ describe('ignoreLateResult', () => {
                         next
                     })
                     .unsubscribe();
+
+                return promise;
             });
         });
     });

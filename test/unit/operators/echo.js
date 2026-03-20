@@ -1,4 +1,4 @@
-import { spy, stub } from 'sinon';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { echo } from '../../../src/operators/echo';
 import { marbles } from 'rxjs-marbles';
 
@@ -7,15 +7,17 @@ describe('echo', () => {
     let predicate;
 
     beforeEach(() => {
-        callback = spy();
-        predicate = stub();
+        callback = vi.fn();
+        predicate = vi.fn();
     });
 
     describe('without any value', () => {
         describe('with a timer that emits immediately', () => {
             let createTimer;
 
-            beforeEach(() => (createTimer = (helpers) => helpers.cold('a|', { a: 0 })));
+            beforeEach(() => {
+                createTimer = (helpers) => helpers.cold('a|', { a: 0 });
+            });
 
             it(
                 'should mirror an empty observable',
@@ -38,14 +40,14 @@ describe('echo', () => {
                         .pipe(echo(callback, predicate, timer))
                         .subscribe({
                             complete: () => {
-                                expect(predicate).to.have.been.calledOnceWithExactly(0, 0);
+                                expect(predicate).to.have.been.calledOnceWith(0, 0);
                             }
                         });
                 })
             );
 
             describe('with a predicate that returns true', () => {
-                beforeEach(() => predicate.returns(true));
+                beforeEach(() => predicate.mockReturnValue(true));
 
                 it(
                     'should call the callback',
@@ -57,7 +59,7 @@ describe('echo', () => {
                             .pipe(echo(callback, predicate, timer))
                             .subscribe({
                                 complete: () => {
-                                    expect(callback).to.have.been.calledOnceWithExactly(0);
+                                    expect(callback).to.have.been.calledOnceWith(0);
                                 }
                             });
                     })
@@ -65,7 +67,7 @@ describe('echo', () => {
             });
 
             describe('with a predicate that returns false', () => {
-                beforeEach(() => predicate.returns(false));
+                beforeEach(() => predicate.mockReturnValue(false));
 
                 it(
                     'should not call the callback',
@@ -88,7 +90,9 @@ describe('echo', () => {
         describe('with a timer that delays the emission', () => {
             let createTimer;
 
-            beforeEach(() => (createTimer = (helpers) => helpers.cold('-a|', { a: 0 })));
+            beforeEach(() => {
+                createTimer = (helpers) => helpers.cold('-a|', { a: 0 });
+            });
 
             it(
                 'should mirror an empty observable',
@@ -157,7 +161,9 @@ describe('echo', () => {
         describe('with a timer that emits immediately', () => {
             let createTimer;
 
-            beforeEach(() => (createTimer = (helpers) => helpers.cold('a|', { a: 0 })));
+            beforeEach(() => {
+                createTimer = (helpers) => helpers.cold('a|', { a: 0 });
+            });
 
             it(
                 'should emit the same value',
@@ -180,14 +186,14 @@ describe('echo', () => {
                         .pipe(echo(callback, predicate, timer))
                         .subscribe({
                             complete: () => {
-                                expect(predicate).to.have.been.calledTwice.and.calledWithExactly(0, 0);
+                                expect(predicate).to.have.been.calledTwice.and.calledWith(0, 0);
                             }
                         });
                 })
             );
 
             describe('with a predicate that returns true', () => {
-                beforeEach(() => predicate.returns(true));
+                beforeEach(() => predicate.mockReturnValue(true));
 
                 it(
                     'should call the callback',
@@ -199,7 +205,7 @@ describe('echo', () => {
                             .pipe(echo(callback, predicate, timer))
                             .subscribe({
                                 complete: () => {
-                                    expect(callback).to.have.been.calledTwice.and.calledWithExactly(0);
+                                    expect(callback).to.have.been.calledTwice.and.calledWith(0);
                                 }
                             });
                     })
@@ -207,7 +213,7 @@ describe('echo', () => {
             });
 
             describe('with a predicate that returns false', () => {
-                beforeEach(() => predicate.returns(false));
+                beforeEach(() => predicate.mockReturnValue(false));
 
                 it(
                     'should not call the callback',
@@ -230,7 +236,9 @@ describe('echo', () => {
         describe('with a timer that delays the emission', () => {
             let createTimer;
 
-            beforeEach(() => (createTimer = (helpers) => helpers.cold('-a|', { a: 0 })));
+            beforeEach(() => {
+                createTimer = (helpers) => helpers.cold('-a|', { a: 0 });
+            });
 
             it(
                 'should emit the same value',

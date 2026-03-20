@@ -1,13 +1,13 @@
 import { EMPTY, of, throwError } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { marbles } from 'rxjs-marbles';
-import { spy } from 'sinon';
 import { ultimately } from '../../../src/operators/ultimately';
 
 describe('ultimately', () => {
     let callback;
 
     beforeEach(() => {
-        callback = spy();
+        callback = vi.fn();
     });
 
     describe('without any value', () => {
@@ -21,14 +21,18 @@ describe('ultimately', () => {
             })
         );
 
-        it('should call the callback', (done) => {
+        it('should call the callback', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             EMPTY.pipe(ultimately(callback)).subscribe({
                 complete() {
-                    expect(callback).to.have.been.calledOnceWithExactly();
+                    expect(callback).to.have.been.calledOnceWith();
 
-                    done();
+                    resolve();
                 }
             });
+
+            return promise;
         });
     });
 
@@ -44,16 +48,20 @@ describe('ultimately', () => {
             })
         );
 
-        it('should call the callback', (done) => {
+        it('should call the callback', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             throwError(() => new Error('a fake error'))
                 .pipe(ultimately(callback))
                 .subscribe({
                     error() {
-                        expect(callback).to.have.been.calledOnceWithExactly();
+                        expect(callback).to.have.been.calledOnceWith();
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 
@@ -74,16 +82,20 @@ describe('ultimately', () => {
             })
         );
 
-        it('should call the callback', (done) => {
+        it('should call the callback', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of(value)
                 .pipe(ultimately(callback))
                 .subscribe({
                     complete() {
-                        expect(callback).to.have.been.calledOnceWithExactly();
+                        expect(callback).to.have.been.calledOnceWith();
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 });

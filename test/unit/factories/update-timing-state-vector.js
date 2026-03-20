@@ -1,5 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createUpdateTimingStateVector } from '../../../src/factories/update-timing-state-vector';
-import { stub } from 'sinon';
 
 describe('updateTimingStateVector()', () => {
     let filterTimingStateVectorUpdate;
@@ -11,30 +11,30 @@ describe('updateTimingStateVector()', () => {
     let updateTimingStateVector;
 
     beforeEach(() => {
-        filterTimingStateVectorUpdate = stub();
-        performance = { now: stub() };
+        filterTimingStateVectorUpdate = vi.fn();
+        performance = { now: vi.fn() };
         timingStateVector = { acceleration: 0, position: 0, timestamp: 0, velocity: 0 };
         timingStateVectorUpdate = Symbol('timingStateVectorUpdate');
-        translateTimingStateVector = stub();
+        translateTimingStateVector = vi.fn();
         translatedTimingStateVector = { acceleration: 0, position: 0, timestamp: 10, velocity: 0 };
 
         updateTimingStateVector = createUpdateTimingStateVector(filterTimingStateVectorUpdate, performance, translateTimingStateVector);
 
-        filterTimingStateVectorUpdate.returns({});
-        performance.now.returns(10000);
-        translateTimingStateVector.returns(translatedTimingStateVector);
+        filterTimingStateVectorUpdate.mockReturnValue({});
+        performance.now.mockReturnValue(10000);
+        translateTimingStateVector.mockReturnValue(translatedTimingStateVector);
     });
 
     it('should call filterTimingStateVectorUpdate()', () => {
         updateTimingStateVector(timingStateVector, timingStateVectorUpdate);
 
-        expect(filterTimingStateVectorUpdate).to.have.been.calledOnceWithExactly(timingStateVectorUpdate);
+        expect(filterTimingStateVectorUpdate).to.have.been.calledOnceWith(timingStateVectorUpdate);
     });
 
     it('should call translateTimingStateVector()', () => {
         updateTimingStateVector(timingStateVector, timingStateVectorUpdate);
 
-        expect(translateTimingStateVector).to.have.been.calledOnceWithExactly(timingStateVector, 10);
+        expect(translateTimingStateVector).to.have.been.calledOnceWith(timingStateVector, 10);
     });
 
     describe('without any property', () => {
@@ -45,7 +45,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with the same acceleration', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ acceleration: 0 });
+            filterTimingStateVectorUpdate.mockReturnValue({ acceleration: 0 });
         });
 
         it('should return null', () => {
@@ -55,7 +55,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with a new acceleration', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ acceleration: 1 });
+            filterTimingStateVectorUpdate.mockReturnValue({ acceleration: 1 });
         });
 
         it('should return an updated vector', () => {
@@ -70,7 +70,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with the same position', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ position: 0 });
+            filterTimingStateVectorUpdate.mockReturnValue({ position: 0 });
         });
 
         it('should return null', () => {
@@ -80,7 +80,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with a new position', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ position: 10 });
+            filterTimingStateVectorUpdate.mockReturnValue({ position: 10 });
         });
 
         it('should return an updated vector', () => {
@@ -95,7 +95,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with the same velocity', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ velocity: 0 });
+            filterTimingStateVectorUpdate.mockReturnValue({ velocity: 0 });
         });
 
         it('should return null', () => {
@@ -105,7 +105,7 @@ describe('updateTimingStateVector()', () => {
 
     describe('with a new velocity', () => {
         beforeEach(() => {
-            filterTimingStateVectorUpdate.returns({ velocity: 1 });
+            filterTimingStateVectorUpdate.mockReturnValue({ velocity: 1 });
         });
 
         it('should return an updated vector', () => {

@@ -1,4 +1,5 @@
 import { BehaviorSubject, of } from 'rxjs';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { marbles } from 'rxjs-marbles';
 import { matchPongWithPing } from '../../../src/operators/match-pong-with-ping';
 
@@ -62,16 +63,20 @@ describe('matchPongWithPing', () => {
             })
         );
 
-        it('should update the stored pings', (done) => {
+        it('should update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of(pong)
                 .pipe(matchPongWithPing(localSentTimesSubject))
                 .subscribe({
                     complete() {
                         expect(localSentTimesSubject.getValue()).to.deep.equal([1, []]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 
@@ -99,16 +104,20 @@ describe('matchPongWithPing', () => {
             })
         );
 
-        it('should update the stored pings', (done) => {
+        it('should update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of(pong)
                 .pipe(matchPongWithPing(localSentTimesSubject))
                 .subscribe({
                     complete() {
                         expect(localSentTimesSubject.getValue()).to.deep.equal([2, []]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 
@@ -136,16 +145,20 @@ describe('matchPongWithPing', () => {
             })
         );
 
-        it('should not update the stored pings', (done) => {
+        it('should not update the stored pings', () => {
+            const { promise, resolve } = Promise.withResolvers();
+
             of(pong)
                 .pipe(matchPongWithPing(localSentTimesSubject))
                 .subscribe({
                     complete() {
                         expect(localSentTimesSubject.getValue()).to.deep.equal([1, [1.23456789]]);
 
-                        done();
+                        resolve();
                     }
                 });
+
+            return promise;
         });
     });
 });

@@ -1,5 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSortByHopsAndRoundTripTime } from '../../../src/factories/sort-by-hops-and-round-trip-time';
-import { stub } from 'sinon';
 
 describe('sortByHopsAndRoundTripTime()', () => {
     let array;
@@ -16,20 +16,20 @@ describe('sortByHopsAndRoundTripTime()', () => {
         valueA = [hopsA];
         valueB = [hopsB];
         array = [valueA, valueB];
-        compareHops = stub();
+        compareHops = vi.fn();
 
         sortByHopsAndRoundTripTime = createSortByHopsAndRoundTripTime(compareHops, ([hops]) => hops);
 
-        compareHops.callsFake((hops) => (hops === hopsA ? 1 : -1));
+        compareHops.mockImplementation((hops) => (hops === hopsA ? 1 : -1));
     });
 
     it('should call compareHops()', () => {
         sortByHopsAndRoundTripTime(array);
 
         try {
-            expect(compareHops).to.have.been.calledOnceWithExactly(hopsA, hopsB);
+            expect(compareHops).to.have.been.calledOnceWith(hopsA, hopsB);
         } catch {
-            expect(compareHops).to.have.been.calledOnceWithExactly(hopsB, hopsA);
+            expect(compareHops).to.have.been.calledOnceWith(hopsB, hopsA);
         }
     });
 
