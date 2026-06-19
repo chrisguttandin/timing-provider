@@ -77,5 +77,5 @@
         "test:unit": "if [ \"$TYPE\" = \"\" -o \"$TYPE\" = \"unit\" ]; then npx vitest --config config/vitest/unit.ts; fi"
     },
     "types": "build/es2019/module.d.ts",
-    "version": "7.2.10"
+    "version": "7.2.11"
 }
